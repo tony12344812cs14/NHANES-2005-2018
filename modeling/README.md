@@ -8,8 +8,8 @@
 | 步驟 | 內容 | 狀態 |
 |---|---|---|
 | 0 | 用特徵猜 cycle，當作診斷工具（找 bug、找方法改變），不是要壓低的目標 | 完成 |
-| 1 | 切資料：leave-one-cycle-out（主要）、2005–14 訓練 / 2015–18 測試、隨機分層 5-fold（樂觀上限） | 未開始 |
-| 2 | 模型：logistic regression（elastic net）、梯度提升樹（XGBoost） | 未開始 |
+| 1 | 切資料：leave-one-cycle-out（主要）、2005–14 訓練 / 2015–18 測試、隨機分層 5-fold（樂觀上限） | LOCO 執行中 |
+| 2 | 模型：logistic regression（elastic net，基準）、XGBoost（主模型）；人口學特徵的參考模型之後再加 | 執行中 |
 | 3 | 指標：**AUROC（主指標，10/29 使用者確認）**；輔助 AUPRC、Brier 與校準、固定閾值的敏感度 / 特異度；加權與不加權各報一次 | 已確認 |
 | 4 | 解釋：SHAP，並檢查有沒有可疑的洩漏特徵 | 未開始 |
 
@@ -48,3 +48,16 @@
 - 睡眠恢復為原始時數 `sleep_hours`；血球與電解質維持原始量測值。
 - 保留 CDC 公布的校正公式（2005–06 肌酸酐、2017–18 生化）與 `RHD280` 的 bug 修正。
 - Step 0 之後只當診斷工具。跨 cycle 的差異會影響多少預測，交給 leave-one-cycle-out 的結果回答。
+
+### 10/29 Step 1：基準線（elastic net）與主模型（XGBoost），leave-one-cycle-out
+
+`step1_loco.py`。每個 cycle 輪流當測試集，超參數用訓練的 6 個 cycle 內層 LOCO、以平均 AUROC 挑。
+主指標彙總：7 個測試 cycle 各自 AUROC 的平均（每個 cycle 權重相同），另附合併預測的 AUROC。
+
+- 網格：elastic net C ∈ {0.01, 0.1, 1} × l1_ratio ∈ {0, 0.5, 1}；XGBoost max_depth ∈ {3, 5} ×
+  min_child_weight ∈ {1, 10}，learning rate 0.05、樹數由 early stopping 決定。
+- 計時時發現特徵字典把 68 個飲食兩天平均標成類別（改名成 `DR_*` 後找不到原本的數值範圍），
+  one-hot 出 10,991 欄；已修正為連續，設計矩陣 803 欄。
+- 單折試算（測試 2005–06）：XGBoost AUROC 0.890、elastic net 0.888，僅供估時，不是正式結果。
+
+結果出來後補上。

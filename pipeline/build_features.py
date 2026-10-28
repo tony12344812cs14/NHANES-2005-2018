@@ -319,7 +319,7 @@ def main():
 
     combine_diet_days(out, rows)
     dic = pd.DataFrame(rows).set_index("column")
-    dic["type"] = ["continuous" if c in ranged or k == "derived" and "count" in c or c in
+    dic["type"] = ["continuous" if c in ranged or k == "diet_mean" or k == "derived" and "count" in c or c in
                    {"cigs_per_day", "hours_worked", "shellfish_times", "fish_times", "urine_leak_amount", "RHQ160"}
                    else "categorical" for c, k in zip(dic.index, dic.kind)]
     miss = out.isna()
