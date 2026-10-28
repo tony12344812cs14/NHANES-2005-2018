@@ -9,7 +9,7 @@
 |---|---|---|
 | 0 | 用特徵猜 cycle，當作診斷工具（找 bug、找方法改變），不是要壓低的目標 | 完成 |
 | 1 | 切資料：leave-one-cycle-out（主要）、2005–14 訓練 / 2015–18 測試、隨機分層 5-fold（樂觀上限） | LOCO 執行中 |
-| 2 | 模型：logistic regression（elastic net，基準）、XGBoost（主模型）；人口學特徵的參考模型之後再加 | 執行中 |
+| 2 | 模型：logistic regression（elastic net，基準）、XGBoost（主模型）；再比較 kNN、CatBoost、TabM（step 2）；人口學特徵的參考模型之後再加 | 執行中 |
 | 3 | 指標：**AUROC（主指標，10/29 使用者確認）**；輔助 AUPRC、Brier 與校準、固定閾值的敏感度 / 特異度；加權與不加權各報一次 | 已確認 |
 | 4 | 解釋：SHAP，並檢查有沒有可疑的洩漏特徵 | 未開始 |
 
@@ -61,3 +61,18 @@
 - 單折試算（測試 2005–06）：XGBoost AUROC 0.890、elastic net 0.888，僅供估時，不是正式結果。
 
 結果出來後補上。
+
+### 10/29 Step 2：kNN、CatBoost、TabM（排在 step 1 之後，自動接著跑）
+
+`step2_more_models.py`，同樣的 LOCO 切法與指標。使用者指定這三個模型、實作細節由我決定：
+
+| 模型 | 輸入 | 調參 | 目的 |
+|---|---|---|---|
+| kNN | 與 logistic regression 相同的設計矩陣（one-hot + 標準化） | k ∈ {50, 150, 400}，內層 LOCO | 非參數的距離方法對照 |
+| CatBoost | 全部特徵；類別特徵用 CatBoost 原生類別編碼，-1 與缺失各自一類 | depth ∈ {4, 6}，內層 LOCO；樹數 early stopping | 比較不同樹模型與類別處理 |
+| TabM | 全部特徵；數值 quantile-normal + 不適用指標，類別為整數編碼 | 不做網格，用套件預設（k=32、3×512、dropout 0.1），early stopping 用訓練資料的 15% | 評估深度學習是否再改善 |
+
+- TabM 不做網格：深度模型調參成本高，原作者也建議預設值；早停集與測試 cycle 無關。
+- TabM 只用完全沒有程式在跑的 GPU（啟動 TabM 當下才檢查），否則用 CPU。
+- 新裝套件：`tabm==0.0.3`、`rtdl_num_embeddings==0.0.12`（`--no-deps`，沒有動到 torch）。
+- 快速測試（只跑 2005–06 一折、最小網格，非正式結果）：kNN 0.766、CatBoost 0.890、TabM（3 個 epoch）0.889。
