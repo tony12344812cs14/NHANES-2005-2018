@@ -39,6 +39,54 @@ SLEEP_ERAS = {"2015-16": "2015-18", "2017-18": "2015-18"}  # others: 2005-14
 PER_YEAR = {1: 52, 2: 12, 3: 1}  # ALQ1x0U / ALQ1x1U: week, month, year
 
 
+# CDC lab calibrations (analytic notes of BIOPRO_D and BIOPRO_J, read 10/29). Only analytes with a
+# published equation are adjusted; CDC recommends no adjustment for the others (Na, Cl, K, Ca, HCO3,
+# phosphorus, bilirubin, total protein, glucose), and CBC gives no equations for its 2013 change.
+CREATININE_2005 = (0.978, -0.016)  # BIOPRO_D: Deming, standard creatinine on the original 2005-06 values
+COBAS_TO_DXC = {  # BIOPRO_J backward equations: 2017-18 (Roche Cobas 6000) -> DxC 660i scale of 1999-2016
+    "LBXSAL": (1.044, 0.01128), "LBXSASSI": (1.018, 3.762), "LBXSATSI": (1.013, 2.688),
+    "LBXSBU": (1.001, 0.4488), "LBXSCH": (1.046, -2.203), "LBXSCR": (1.051, -0.06945),
+    "LBXSGTSI": (0.8042, 2.363), "LBXSIR": (0.9776, -4.494), "LBXSLDSI": (0.8568, 2.062),
+    "LBXSTR": (0.9655, -7.020), "LBXSUA": (0.9323, 0.2326),
+}
+COBAS_TO_DXC_LOG10 = {"LBXSAPSI": (1.001, -0.04294)}  # log10 Deming
+WITHIN_CYCLE_Z = [  # CDC names a method effect but gives no equation
+    "LBXRDW", "LBXWBCSI", "LBXHCT", "LBXMCHSI", "LBXMC",               # CBC_H: 2012-13 HMX -> DxH 800
+    "LBXSNASI", "LBXSCLSI", "LBXSKSI", "LBXSC3SI", "LBXSOSSI",        # BIOPRO_J: "adjustment not recommended"
+]
+
+
+def calibrate_labs(d):
+    """Put every cycle's biochemistry on one scale, in place. Returns {column: note} for the dictionary."""
+    notes = {}
+    old = d.cycle.eq("2005-06")
+    a, b = CREATININE_2005
+    d.loc[old, "LBXSCR"] = a * d.loc[old, "LBXSCR"] + b
+    notes["LBXSCR"] = "2005-06 corrected to standard creatinine (CDC Deming: 0.978 x - 0.016)"
+    new = d.cycle.eq("2017-18")
+    for c, (a, b) in COBAS_TO_DXC.items():
+        if c in d:
+            d.loc[new, c] = a * d.loc[new, c] + b
+            notes[c] = notes.get(c, "") + f"; 2017-18 Roche Cobas -> Beckman DxC scale ({a} x {b:+})".lstrip("; ")
+    for c, (a, b) in COBAS_TO_DXC_LOG10.items():
+        if c in d:
+            d.loc[new, c] = 10 ** (a * np.log10(d.loc[new, c]) + b)
+            notes[c] = f"2017-18 Roche Cobas -> Beckman DxC scale (log10: {a} log x {b:+})"
+    # calculated analytes follow their inputs (CDC formulas in BIOPRO_J)
+    d.loc[new, "LBXSGB"] = d.loc[new, "LBXSTP"] - d.loc[new, "LBXSAL"]
+    d.loc[new, "LBXSOSSI"] = 1.86 * d.loc[new, "LBXSNASI"] + d.loc[new, "LBXSGL"] / 18 + d.loc[new, "LBXSBU"] / 2.8 + 9
+    notes["LBXSGB"] = "2017-18 recalculated as total protein - calibrated albumin"
+    notes["LBXSOSSI"] = "2017-18 recalculated as 1.86 Na + glucose/18 + calibrated BUN/2.8 + 9"
+    # instrument changes without a published equation (decided 10/29): z-score within each cycle, which
+    # removes their between-cycle shifts; uses no outcome, only each cycle's own mean and SD
+    for c in WITHIN_CYCLE_Z:
+        if c in d:
+            g = d.groupby("cycle")[c]
+            d[c] = (d[c] - g.transform("mean")) / g.transform("std")
+            notes[c] = notes.get(c, "") + "; z-score within cycle (instrument change, no CDC equation)".lstrip("; ")
+    return notes
+
+
 def col(d, *names):
     """First of the names that holds a value, row by row (a renamed item across cycles)."""
     out = pd.Series(np.nan, index=d.index)
@@ -89,10 +137,13 @@ def harmonized(d):
     new_sleep = np.floor(d.SLD012 + 0.5).clip(upper=12)
     sleep = d.SLD010H.fillna(new_sleep)
     era = d.cycle.map(SLEEP_ERAS).fillna("2005-14")
-    z = (sleep - sleep.groupby(era).transform("mean")) / sleep.groupby(era).transform("std")
-    out["sleep_hours_z"] = (z, "SLD010H, SLD012",
-                            "sleep hours as a z-score within 2005-14 and within 2015-18 (decided 10/28): 2015+ asks "
-                            "weekday sleep and runs about 1 h higher, so only the rank inside each era is kept")
+    jitter = np.random.default_rng(0).uniform(0, 1e-3, len(sleep))  # random order among equal answers
+    pct = (sleep + jitter).groupby(era).rank(pct=True)  # so every era fills each quintile with 20%
+    quint = pd.cut(pct, [0, 0.2, 0.4, 0.6, 0.8, 1.0], labels=[1, 2, 3, 4, 5]).astype(float)
+    out["sleep_quintile"] = (quint, "SLD010H, SLD012",
+                             "sleep hours as a quintile (1 shortest ... 5 longest) within 2005-14 and within 2015-18: "
+                             "2015+ asks weekday sleep and runs about 1 h higher, so only the rank inside each era is "
+                             "kept (10/29: replaces sleep_hours_z, whose values still differed between eras)")
 
     # alcohol: who is asked follows ALQ101 / ALQ110 (2005-16) or ALQ111 (2017-18)
     drinker = d.ALQ101.eq(1) | d.ALQ110.eq(1) | d.ALQ111.eq(1)

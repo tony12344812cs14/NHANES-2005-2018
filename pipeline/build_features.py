@@ -35,7 +35,7 @@ import pandas as pd
 sys.path[:0] = [str(Path(__file__).resolve().parents[1]), str(Path(__file__).resolve().parent)]
 from nhanes.paths import DRUG_FILE, WORK  # noqa: E402
 from nhanes import io as nio  # noqa: E402
-from harmonize import EXTRA_LOAD, harmonized, pfoa_pfos, rx_counts  # noqa: E402
+from harmonize import EXTRA_LOAD, calibrate_labs, harmonized, pfoa_pfos, rx_counts  # noqa: E402
 from step5_missing import CYCLES, SHORT, population  # noqa: E402
 
 OUT = WORK / "features"
@@ -267,6 +267,7 @@ def main():
     feats = feats[~feats.module.isin(["PFC", "COTNAL"])]  # loaded through their family name
     feats = feats.drop_duplicates("variable")  # DRABF sits in both DR1TOT and DR2TOT
     d = load(feats, codes)
+    lab_notes = calibrate_labs(d)
     d["PHQ9"] = d[nio.PHQ_ITEMS].sum(axis=1)
     d["depression"] = (d.PHQ9 >= 10).astype(int)
 
@@ -275,8 +276,9 @@ def main():
         if (r.module, r.variable) in empty or re.fullmatch(DROP.get(r.module, "(?!)"), r.variable):
             continue
         cols[r.variable] = d[r.variable]
+        rule = f"{r.label}; {lab_notes[r.variable]}" if r.variable in lab_notes else r.label
         rows.append({"column": r.variable, "kind": "raw", "module": r.module, "sources": r.variable,
-                     "rule": r.label, "leak_note": r.leak_note if isinstance(r.leak_note, str) else ""})
+                     "rule": rule, "leak_note": r.leak_note if isinstance(r.leak_note, str) else ""})
     out = pd.DataFrame(cols)
 
     for pat, (asked, gate_no) in CHECKBOX.items():

@@ -84,7 +84,11 @@ Every decision, with the evidence behind it, is in `docs/` (in Chinese):
 A few that matter when you use the table:
 
 - **Sleep hours:** from 2015 the question asks about weekdays and the mean is about one hour higher,
-  so `sleep_hours_z` is a z-score within 2005–14 and within 2015–18.
+  so `sleep_quintile` ranks sleep within 2005–14 and within 2015–18 (1 shortest … 5 longest).
+- **Lab instrument changes:** 2005–06 serum creatinine and the 2017–18 biochemistry panel are put on one
+  scale with the CDC calibration equations; analytes CDC flags as instrument-affected but gives no equation
+  for (CBC: RDW, WBC, HCT, MCH, MCHC; biochemistry: Na, Cl, K, bicarbonate, osmolality) are z-scored within
+  each cycle. The rule of each one is in `feature_dictionary.csv`.
 - **Medications:** `rx_count` leaves out antidepressants, antipsychotics and anxiolytics / sedatives /
   hypnotics, since they mean the outcome is already being treated.
 - **Questions whose threshold changed:** `binge_freq` and `heavy_drinking_ever` use 5+ drinks before

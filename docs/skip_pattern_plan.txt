@@ -245,3 +245,15 @@ HIQ105 改歸 step1 process（已改 step1_nonfeature.py）。
      與抗焦慮 / 鎮靜安眠藥（第二層 67）。上面第九節「仍算在內」已不適用。
   修正：RHD280 補 2005-06 未問者為 0 時，原始代碼（1 是、2 否）沒有轉成 1 / 0，「否」同時出現 0 和 2；
      已改為 1 / 0（cycle 檢查發現 2005-06 到 2007-08 跳 1.5 SD）。
+
+十一、cycle 檢查後的處理（10/29，harmonize.calibrate_labs）
+  Step 0（用特徵猜 cycle）準確率 0.768，主要來自睡眠題與檢驗儀器更換。
+  睡眠：sleep_hours_z 改為 sleep_quintile（各時期內 1-5 級；同一時數的人以固定亂數種子排先後，
+     讓每個時期每級都是 20%）。z 分數只對齊平均，兩時期的數值集合不同，模型仍能分辨年代。
+  檢驗校正（只用 CDC 公布的公式，出處為 codebook 的 Analytic Notes）：
+     - 2005-06 肌酸酐：0.978 x - 0.016（BIOPRO_D，CDC「強烈建議」；2007-08 釋出資料已校正）
+     - 2017-18 生化（Roche Cobas 6000 -> Beckman DxC 660i，BIOPRO_J 反向公式）：白蛋白、ALT、AST、
+       ALP（log10）、BUN、膽固醇、肌酸酐、GGT、鐵、LDH、三酸甘油脂、尿酸；球蛋白、滲透壓依 CDC 公式重算
+  沒有公式、但 CDC 指明受儀器影響的項目：各 cycle 內標準化（z 分數）
+     - 血球 RDW、WBC、HCT、MCH、MCHC（CBC_H：2012 年 HMX 換成 DxH 800）
+     - 鈉、氯、鉀、碳酸氫鹽、滲透壓（BIOPRO_J：「不建議調整」）
