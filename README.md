@@ -10,6 +10,8 @@ merges what is the same, recodes what changed, and drops what cannot be aligned.
 
 **Output:** 33,498 adults × 317 features, no feature above 20% missing in any cycle.
 
+**Project notes:** [Notion page](https://app.notion.com/p/NHANES-2005-2018-407d07eb533181eeb0c0cb18503ffc18)
+
 ## Quick start
 
 Needs Python 3.10–3.13 (check with `python3 --version`).
