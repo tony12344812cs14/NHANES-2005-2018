@@ -12,11 +12,16 @@ merges what is the same, recodes what changed, and drops what cannot be aligned.
 
 ## Quick start
 
+Needs Python 3.10–3.13 (check with `python3 --version`).
+
 ```bash
-python3.10 -m venv .venv && source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ./run_pipeline.sh          # downloads ~0.6 GB from CDC, then builds everything (~10 min after the download)
 ```
+
+If your `python3` is older, conda can provide one:
+`conda create -n nhanes python=3.12 && conda activate nhanes`, then the last two lines above.
 
 Everything is public: the script downloads the NHANES files from the CDC website, so no data
 are stored in this repository. Set `NHANES_DATA` and `NHANES_WORK` to put data and outputs

@@ -1,4 +1,4 @@
-# Python 3.10; versions the pipeline was built and checked with
+# Python 3.10-3.13; versions the pipeline was built and checked with (on Python 3.10)
 numpy==2.2.6
 pandas==2.3.3
 scikit-learn==1.7.2
