@@ -15,6 +15,35 @@
 
 所有前處理（插補、標準化、特徵選擇）都只在訓練集上 fit。
 
+## 指標怎麼算
+
+每個測試 cycle 各算一次，程式在 `step1_loco.py` 的 `metrics()`（step 2 共用）。
+
+| 指標 | 意思 | 算法 |
+|---|---|---|
+| **AUROC**（主指標） | 隨機挑一個憂鬱者、一個非憂鬱者，模型給憂鬱者較高分數的機率；0.5 = 亂猜、1 = 完美。只看排序，不受機率尺度與盛行率影響 | `roc_auc_score(y, p)` |
+| 加權 AUROC | 同上，但把樣本推回美國人口：每一對人的重要性 = 兩人調查權重相乘 | `roc_auc_score(y, p, sample_weight=WTMEC2YR)` |
+| AUPRC | precision–recall 曲線下面積，著重模型抓陽性的能力；基準值等於盛行率（約 0.09），不是 0.5 | `average_precision_score(y, p)` |
+| Brier | 預測機率與實際 0/1 的均方差，越低越好；同時反映區辨力與校準 | `brier_score_loss(y, p)` |
+
+彙總方式：
+
+- **主要數字**：7 個測試 cycle 各自的指標取平均 ± 標準差，每個 cycle 權重相同。標準差是 cycle 之間的變異，不是抽樣誤差。
+- **合併 AUROC**：把 7 折的預測接在一起算一次 AUROC，人數多的 cycle 影響較大；不同折的模型機率尺度不完全一致，所以只當輔助。
+
+加權 AUROC 的說明：
+
+- NHANES 刻意多抽某些族群（西語裔、非裔、2011 起的亞裔、老年人、低收入者），並有拒訪差異，樣本比例和美國人口不同。
+  CDC 給每個人權重 `WTMEC2YR`，代表「這個人代表多少美國人」：多抽的族群權重小，少抽的權重大。
+- 一般 AUROC 反映「這份樣本」裡的表現；加權 AUROC 估計「用在全美成年人身上」的表現。兩者接近，表示模型不是只在被多抽的族群表現好。
+- 用 `WTMEC2YR`（MEC 檢查權重）是因為 PHQ-9 在 MEC 施測。權重只用在評估，訓練不用。
+- 只算點估計；嚴謹的信賴區間需要考慮抽樣設計（`SDMVPSU`、`SDMVSTRA`），目前沒做。
+
+注意事項：
+
+- 訓練時用了 class weight（elastic net `balanced`、XGBoost `scale_pos_weight`、CatBoost `Balanced`、TabM loss 的 `pos_weight`），預測機率會被往上推，Brier 偏高；kNN 沒用 class weight，所以 Brier 不能跨模型直接比。
+- 模型都還沒校準；校準、固定閾值的敏感度 / 特異度之後再補。
+
 ## 紀錄
 
 ### 10/29 Step 0 第 1 次：cycle 還分得很清楚
