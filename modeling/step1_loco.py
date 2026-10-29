@@ -136,13 +136,18 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--quick", action="store_true")
     args = ap.parse_args()
-    OUT.mkdir(parents=True, exist_ok=True)
     data = pd.read_csv(FEAT / "features_2005_2018.csv.gz")
     dic = pd.read_csv(FEAT / "feature_dictionary.csv").set_index("column").type.to_dict()
+    run_loco(data, dic, OUT, args.quick)
+
+
+def run_loco(data, dic, out, quick=False, title="leave-one-cycle-out, outcome PHQ-9 >= 10"):
+    """LOCO for logreg and xgboost on `data` (NOT_FEATURES columns + features); `dic` maps feature -> type."""
+    out.mkdir(parents=True, exist_ok=True)
     cycles = sorted(data.cycle.unique())
-    outer = cycles[:1] if args.quick else cycles
+    outer = cycles[:1] if quick else cycles
     grids = {"logreg": grid(LOGREG_GRID), "xgboost": grid(XGB_GRID)}
-    if args.quick:
+    if quick:
         grids = {k: v[:1] for k, v in grids.items()}
 
     preds, rows, chosen = [], [], {}
@@ -169,16 +174,16 @@ def main():
 
     pred = pd.concat(preds, ignore_index=True)
     met = pd.DataFrame(rows)
-    pred.to_csv(OUT / "predictions.csv.gz", index=False)
-    met.to_csv(OUT / "metrics.csv", index=False)
-    (OUT / "chosen_params.json").write_text(json.dumps(chosen, indent=1))
+    pred.to_csv(out / "predictions.csv.gz", index=False)
+    met.to_csv(out / "metrics.csv", index=False)
+    (out / "chosen_params.json").write_text(json.dumps(chosen, indent=1))
     summary = met.groupby("model")[["auroc", "auroc_weighted", "auprc", "brier"]].agg(["mean", "std"]).round(3)
     pooled = pred.groupby("model").apply(lambda g: roc_auc_score(g.depression, g.prob)).round(3)
-    lines = ["leave-one-cycle-out, outcome PHQ-9 >= 10", "",
+    lines = [title, "",
              "mean (sd) over test cycles, each cycle weighted equally:", summary.to_string(), "",
              "AUROC of all out-of-cycle predictions pooled:", pooled.to_string(), "",
              "per test cycle:", met.round(3).to_string(index=False)]
-    (OUT / "report.txt").write_text("\n".join(lines) + "\n")
+    (out / "report.txt").write_text("\n".join(lines) + "\n")
     print("\n".join(lines))
 
 
