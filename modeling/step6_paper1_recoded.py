@@ -22,7 +22,9 @@ Evaluations
            extra people, so the weighted AUROC is unweighted there
 
 Usage: python modeling/step6_paper1_recoded.py PAPER1_REPRO_DIR PAPER1_CSV [--eval loco|kfold10]
-           [--table raw|recoded] [--drug-file RXQ_DRUG.xpt] [--quick]
+           [--table raw|recoded] [--drug-file RXQ_DRUG.xpt] [--vae] [--quick]
+       --vae: also add the 32 latent means of step 5's denoising VAE, trained per split on the training
+       rows only (output directory gets a _vae suffix)
        PAPER1_REPRO_DIR holds build_dataset.py of our reproduction; PAPER1_CSV is its FullData_rm_dl_bt.csv.
 Output: <NHANES_WORK>/modeling/step6_paper1_recoded/<eval>_<table>/ (metrics.csv, predictions.csv.gz,
         chosen_params.json, report.txt); the recoded table in .../data/
@@ -109,8 +111,29 @@ def frames(table_csv, how, quick):
 PAPER_CSV = None
 
 
-def run(how, table, table_csv, quick):
-    out = OUT / f"{how}_{table}"
+def add_vae(f, dic, device, quick):
+    """Step 5's denoising VAE, trained on the training rows of this split without labels; adds its
+    32 latent means as continuous features."""
+    from step5_vae import VAE, encode, train_vae
+    feats = [c for c in f if c not in NOT_FEATURES]
+    is_tr = (f.cycle != "TEST").to_numpy()
+    A, B = logreg_matrix(f.loc[is_tr, feats], f.loc[~is_tr, feats], dic)
+    vae, epochs, _ = train_vae(A, device, quick)
+    z = np.zeros((len(f), VAE["latent"]), dtype=np.float32)
+    z[is_tr], z[~is_tr] = encode(vae, A, device), encode(vae, B, device)
+    zcols = [f"z{i:02d}" for i in range(VAE["latent"])]
+    return (pd.concat([f, pd.DataFrame(z, columns=zcols, index=f.index)], axis=1),
+            {**dic, **{c: "continuous" for c in zcols}}, epochs)
+
+
+def run(how, table, table_csv, quick, vae=False):
+    out = OUT / f"{how}_{table}{'_vae' if vae else ''}"
+    if vae:
+        import torch
+        from step2_more_models import free_gpu
+        gpu = free_gpu()
+        device = torch.device(f"cuda:{gpu}" if gpu is not None else "cpu")
+        print(f"VAE on {device}", flush=True)
     out.mkdir(parents=True, exist_ok=True)
     grids = {"logreg": grid(LOGREG_GRID), "xgboost": grid(XGB_GRID)}
     if quick:
@@ -118,6 +141,10 @@ def run(how, table, table_csv, quick):
         CAT_GRID[:] = CAT_GRID[:1]
     preds, rows, chosen = [], [], {}
     for split, f, inner, dic in frames(table_csv, how, quick):
+        if vae:
+            t0 = time.time()
+            f, dic, epochs = add_vae(f, dic, device, quick)
+            print(f"{how} {table} {split} VAE: {epochs} epochs, {(time.time() - t0) / 60:.1f} min", flush=True)
         tr, te = f[f.cycle != "TEST"], f[f.cycle == "TEST"]
         Xtr, Xte = tr.drop(columns=NOT_FEATURES), te.drop(columns=NOT_FEATURES)
         probs = {}
@@ -152,7 +179,8 @@ def run(how, table, table_csv, quick):
     met.to_csv(out / "metrics.csv", index=False)
     (out / "chosen_params.json").write_text(json.dumps(chosen, indent=1, default=str))
     summary = met.groupby("model", sort=False)[["auroc", "auroc_weighted", "auprc", "brier"]].agg(["mean", "std"]).round(3)
-    lines = [f"features of Dang et al. (2024), table '{table}', evaluation '{how}'", "",
+    lines = [f"features of Dang et al. (2024), table '{table}'{' + VAE latent (step 5)' if vae else ''}, "
+             f"evaluation '{how}'", "",
              "mean (sd) over test splits:", summary.to_string(), "",
              "AUROC per test split:", met.pivot(index="split", columns="model", values="auroc").round(3).to_string()]
     (out / "report.txt").write_text("\n".join(lines) + "\n")
@@ -167,6 +195,7 @@ def main():
     ap.add_argument("--eval", choices=["loco", "kfold10"])
     ap.add_argument("--table", choices=["raw", "recoded"])
     ap.add_argument("--drug-file", type=Path, default=DRUG_FILE, help="Multum RXQ_DRUG.xpt")
+    ap.add_argument("--vae", action="store_true", help="add step 5's VAE latent features")
     ap.add_argument("--quick", action="store_true")
     args = ap.parse_args()
     PAPER_CSV = args.paper_csv
@@ -176,7 +205,7 @@ def main():
     tables = {"raw": args.paper_csv, "recoded": rec}
     for how in [args.eval] if args.eval else ["loco", "kfold10"]:
         for table in [args.table] if args.table else ["raw", "recoded"]:
-            run(how, table, tables[table], args.quick)
+            run(how, table, tables[table], args.quick, args.vae)
 
 
 if __name__ == "__main__":

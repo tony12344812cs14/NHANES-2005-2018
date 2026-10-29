@@ -271,3 +271,29 @@
 - 結論：paper1 這 86 個變數的上限約 0.79–0.80，換編碼、換模型、集成、VAE（step 5）都只差 0.005 以內。
   要明顯提升只能靠變數本身（step 3：我們的 317 個是 0.874）。
 - 待做：用本 repo 的 pipeline 處理 paper1 的 86 個變數，拆開「選了哪些變數」與「怎麼處理」各佔多少。
+
+### 10/30 Step 8：TabPFN / TabICL（在另一台 3090 上跑）
+
+目標仍是在 paper1 的 86 個變數、36,259 人、同樣的 10-fold 下超過 0.793。兩個表格基礎模型都用套件預設、不調參：
+
+| 版本 | 模型 | 訓練目標 |
+|---|---|---|
+| tabpfn_clf | TabPFNClassifier（TabPFN-3.5，`tabpfn==9.2.0`） | 0/1 標籤 |
+| tabpfn_reg | TabPFNRegressor | PHQ-9 總分（step 7 顯示總分訓練有幫助） |
+| tabicl_clf | TabICLClassifier（TabICLv2，`tabicl==2.2.0`） | 0/1 標籤 |
+| tabicl_reg | TabICLRegressor | PHQ-9 總分 |
+
+1. 本機匯出資料包：`step8_export_bundle.py` → `outputs/modeling/step8_bundle/`（`data.csv.gz` 1.4 MB + `columns.json`）：
+   重新編碼的 86 個變數（step 6）、標籤、PHQ-9 總分、折號（與 step 6、7 逐人一致，可逐折配對）。
+2. GPU 機器只需要這個資料包和 `step8_foundation_models.py`（不需要 NHANES 資料或本 pipeline）：
+   ```bash
+   pip install -r modeling/requirements-foundation.txt     # 先裝好 CUDA 版 torch
+   export TABPFN_TOKEN=...                                 # https://ux.priorlabs.ai 接受授權後取得（非商用）
+   python modeling/step8_foundation_models.py step8_bundle step8_out --quick          # 約幾分鐘，確認環境
+   python modeling/step8_foundation_models.py step8_bundle step8_out --device cuda:0  # 正式 4 個版本 × 10 折
+   ```
+   每個（模型, 折）完成就寫 `step8_out/<model>/fold<k>.csv`，中斷後重跑會跳過已完成的。
+3. 把 `step8_out/` 傳回本機，與 step 6、7 的預測一起評估與集成。
+
+- 本機 CPU 測試（只用 2,000 筆訓練、第 1 折）：TabICL 分類 0.767、迴歸 0.771，流程正常；TabPFN 需要授權 token，
+  在下載權重前停止（預期行為）。

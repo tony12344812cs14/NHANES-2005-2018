@@ -1,0 +1,3 @@
+# Extra packages for modeling/step8_foundation_models.py (install on the GPU machine, after a CUDA build of torch)
+tabpfn==9.2.0
+tabicl==2.2.0
