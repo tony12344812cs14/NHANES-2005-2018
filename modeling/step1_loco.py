@@ -141,7 +141,8 @@ def main():
     run_loco(data, dic, OUT, args.quick)
 
 
-def run_loco(data, dic, out, quick=False, title="leave-one-cycle-out, outcome PHQ-9 >= 10"):
+def run_loco(data, dic, out, quick=False, title="leave-one-cycle-out, outcome PHQ-9 >= 10",
+             models=("logreg", "xgboost")):
     """LOCO for logreg and xgboost on `data` (NOT_FEATURES columns + features); `dic` maps feature -> type."""
     out.mkdir(parents=True, exist_ok=True)
     cycles = sorted(data.cycle.unique())
@@ -155,7 +156,7 @@ def run_loco(data, dic, out, quick=False, title="leave-one-cycle-out, outcome PH
         train_cycles = [c for c in cycles if c != test_c]
         tr, te = data[data.cycle != test_c], data[data.cycle == test_c]
         Xtr, Xte = tr.drop(columns=NOT_FEATURES), te.drop(columns=NOT_FEATURES)
-        for model in ["logreg", "xgboost"]:
+        for model in models:
             t0 = time.time()
             params, inner_auc = tune(model, data, train_cycles, dic, grids[model])
             if model == "logreg":
