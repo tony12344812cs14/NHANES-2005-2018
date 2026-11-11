@@ -3,6 +3,8 @@
 預測目標：憂鬱（PHQ-9 ≥ 10），資料為 `outputs/features/features_2005_2018.csv.gz`
 （33,498 人 × 317 個特徵，2005–06 到 2017–18 共 7 個 cycle，盛行率 8.9%）。
 
+每個 step 是一本 notebook（`stepN_*.ipynb`），存有結果表與圖，打開就能看。最上面的 `RUN = False` 時只讀 `$NHANES_WORK/modeling/` 裡已存的結果來畫；`RUN = True` 才重新訓練（`QUICK = True` 只跑一折）。多個 step 共用的程式在 `nhanes/loco.py`、`nhanes/paper1.py`、`nhanes/vae.py`；用到 paper1 資料表的 step 以環境變數 `PAPER1_CSV`、`PAPER1_REPRO` 指定路徑（原本是命令列參數）。
+
 ## 計畫
 
 | 步驟 | 內容 | 狀態 |
@@ -17,7 +19,7 @@
 
 ## 指標怎麼算
 
-每個測試 cycle 各算一次，程式在 `step1_loco.py` 的 `metrics()`（step 2 共用）。
+每個測試 cycle 各算一次，程式在 `nhanes/loco.py` 的 `metrics()`（各 step 共用）。
 
 | 指標 | 意思 | 算法 |
 |---|---|---|
@@ -48,7 +50,7 @@
 
 ### 10/29 Step 0 第 1 次：cycle 還分得很清楚
 
-`step0_cycle_check.py`：7 類 XGBoost 只用特徵猜 cycle，5-fold。
+`step0_cycle_check.ipynb`：7 類 XGBoost 只用特徵猜 cycle，5-fold。
 
 - 準確率 **0.768**（隨機猜 0.156）；各 cycle one-vs-rest AUROC 0.91–0.997，2005–06、2015–16、2017–18 最容易分辨。
 - 單一特徵最能分辨 cycle 的，以及處理方式：
@@ -80,7 +82,7 @@
 
 ### 10/29 Step 1：基準線（elastic net）與主模型（XGBoost），leave-one-cycle-out
 
-`step1_loco.py`。每個 cycle 輪流當測試集，超參數用訓練的 6 個 cycle 內層 LOCO、以平均 AUROC 挑。
+`step1_loco.ipynb`。每個 cycle 輪流當測試集，超參數用訓練的 6 個 cycle 內層 LOCO、以平均 AUROC 挑。
 主指標彙總：7 個測試 cycle 各自 AUROC 的平均（每個 cycle 權重相同），另附合併預測的 AUROC。
 
 - 網格：elastic net C ∈ {0.01, 0.1, 1} × l1_ratio ∈ {0, 0.5, 1}；XGBoost max_depth ∈ {3, 5} ×
@@ -109,7 +111,7 @@
 
 ### 10/29 Step 2：kNN、CatBoost、TabM（排在 step 1 之後，自動接著跑）
 
-`step2_more_models.py`，同樣的 LOCO 切法與指標。使用者指定這三個模型、實作細節由我決定：
+`step2_more_models.ipynb`，同樣的 LOCO 切法與指標。使用者指定這三個模型、實作細節由我決定：
 
 | 模型 | 輸入 | 調參 | 目的 |
 |---|---|---|---|
@@ -155,7 +157,7 @@
 
 ### 10/29 Step 3：換成 paper1 的 86 個特徵，其他全部不變
 
-`step3_paper1_features.py`。問題：我們的 AUROC（0.874）比 5 篇論文高，是特徵比較好，還是評估方式不同？
+`step3_paper1_features.ipynb`。問題：我們的 AUROC（0.874）比 5 篇論文高，是特徵比較好，還是評估方式不同？
 做法：同樣 33,498 人、同樣結果定義（與 paper1 資料表逐人比對完全一致）、同樣 LOCO 切法、模型與網格，
 只把特徵換成 Dang et al. (2024) 的 86 個（來自我們的 paper1 復現資料表）。step 1 的主迴圈抽成 `run_loco()` 共用。
 
@@ -188,7 +190,7 @@
 
 ### 10/29 Step 4：拿掉和 PHQ-9 概念重疊的特徵
 
-`step4_phq_overlap.py`。問題：AUROC 有多少來自「問了和 PHQ-9 相近的東西」？這些特徵都不是由 PHQ-9 衍生，不算洩漏。
+`step4_phq_overlap.ipynb`。問題：AUROC 有多少來自「問了和 PHQ-9 相近的東西」？這些特徵都不是由 PHQ-9 衍生，不算洩漏。
 同樣的人、切法與網格，分三組拿掉：
 
 | 組 | 特徵 | 對應 PHQ-9 |
@@ -221,7 +223,7 @@
 
 ### 10/29 Step 5：paper1 的 86 個特徵先過去噪 VAE，再接 elastic net / XGBoost
 
-`step5_vae.py`。問題：非監督的去噪 VAE 能不能讓 paper1 的特徵更好用？同樣的人、切法、網格與 step 3 相同。
+`step5_vae.ipynb`。問題：非監督的去噪 VAE 能不能讓 paper1 的特徵更好用？同樣的人、切法、網格與 step 3 相同。
 
 - 每折只用 6 個訓練 cycle（不用標籤）訓練 VAE：輸入是 step 1 的設計矩陣（one-hot + 標準化，約 420 欄）；
   15% swap noise；損失 = 數值欄 MSE + one-hot 欄 BCE + KL；架構固定不調參 420 → 256 → 128 → 32 → 128 → 256 → 420；
@@ -242,7 +244,7 @@
 
 ### 10/29 Step 6：paper1 的 86 個變數重新編碼 + CatBoost + 集成，兩種評估
 
-`step6_paper1_recoded.py`。問題：在同樣的變數下，換編碼方式、換模型能不能超過 paper1？版本事先固定，全部列出。
+`step6_paper1_recoded.ipynb`。問題：在同樣的變數下，換編碼方式、換模型能不能超過 paper1？版本事先固定，全部列出。
 注意：這裡的「paper1 特徵」是我們復現 paper1 時照論文定義自建的資料表（`paper1/repro/build_dataset.py`），
 不是本 repo 的 pipeline 處理的；為了拿到補 0 之前的值，builder 加了 `build(fill=False)`（預設行為不變，重建結果與原表逐格比對一致）。
 
@@ -283,15 +285,17 @@
 | tabicl_clf | TabICLClassifier（TabICLv2，`tabicl==2.2.0`） | 0/1 標籤 |
 | tabicl_reg | TabICLRegressor | PHQ-9 總分 |
 
-1. 本機匯出資料包：`step8_export_bundle.py` → `outputs/modeling/step8_bundle/`（`data.csv.gz` 1.4 MB + `columns.json`）：
+1. 本機匯出資料包：`step8_export_bundle.ipynb` → `outputs/modeling/step8_bundle/`（`data.csv.gz` 1.4 MB + `columns.json`）：
    重新編碼的 86 個變數（step 6）、標籤、PHQ-9 總分、折號（與 step 6、7 逐人一致，可逐折配對）。
-2. GPU 機器只需要這個資料包和 `step8_foundation_models.py`（不需要 NHANES 資料或本 pipeline）：
+2. GPU 機器只需要這個資料包和 `step8_foundation_models.ipynb`（不需要 NHANES 資料或本 pipeline）：
    ```bash
    pip install -r modeling/requirements-foundation.txt     # 先裝好 CUDA 版 torch
    export TABPFN_TOKEN=...                                 # https://ux.priorlabs.ai 接受授權後取得（非商用）
-   python modeling/step8_foundation_models.py step8_bundle step8_out --quick          # 約幾分鐘，確認環境
-   python modeling/step8_foundation_models.py step8_bundle step8_out --device cuda:0  # 正式 4 個版本 × 10 折
+   export STEP8_BUNDLE=$PWD/step8_bundle STEP8_OUT=$PWD/step8_out    # 絕對路徑：notebook 在 modeling/ 裡執行
+   NHANES_RUN=1 NHANES_QUICK=1 jupyter execute modeling/step8_foundation_models.ipynb   # 約幾分鐘，確認環境
+   NHANES_RUN=1 jupyter execute --inplace modeling/step8_foundation_models.ipynb        # 正式 4 個版本 × 10 折
    ```
+   （或在 notebook 最上面設 `RUN = True`、`DEVICE = "cuda:0"` 後 Run All。）
    每個（模型, 折）完成就寫 `step8_out/<model>/fold<k>.csv`，中斷後重跑會跳過已完成的。
 3. 把 `step8_out/` 傳回本機，與 step 6、7 的預測一起評估與集成。
 

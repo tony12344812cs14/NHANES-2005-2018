@@ -1,17 +1,13 @@
 """Cross-cycle harmonisation of the items left in pending_features.txt, the prescription file and
-the PFOA / PFOS totals. Used by build_features.py. Category mappings follow the CDC code tables in
+the PFOA / PFOS totals. Used by pipeline/build_features.ipynb. Category mappings follow the CDC code tables in
 codebook_values.csv; gates were checked per cycle (see skip_pattern_plan.txt section 9).
 
 Every function returns {name: (values, sources, rule)} like build_features.derive.
 """
-import sys
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 
-sys.path[:0] = [str(Path(__file__).resolve().parents[1]), str(Path(__file__).resolve().parent)]
-from nhanes import io as nio  # noqa: E402
+from nhanes import io as nio
 
 # variables to load that are not 7-cycle features themselves
 EXTRA_LOAD = {

@@ -54,22 +54,45 @@ Tree models can use the table as it is. For linear models, one-hot the categoric
 
 ## Pipeline
 
-`run_pipeline.sh` runs these in order; each writes to `outputs/`.
+Every step is a notebook, saved with its tables and figures so it can be read on GitHub without
+running anything. `run_pipeline.sh` executes them in order, in place (`jupyter execute --inplace`);
+each writes to `outputs/`. To run one by hand, open it and Run All (from the repository root or
+its own folder, with the same `NHANES_DATA` / `NHANES_WORK`).
 
-| Script | Does |
+| Step | Does |
 |---|---|
 | `nhanes/download.py` | downloads the 322 data files and the Multum drug-category file |
-| `pipeline/labels.py` | reads every variable label from the file headers |
-| `pipeline/step1_nonfeature.py` | drops ids, weights, design variables, lab comment codes, unit duplicates, process variables |
-| `pipeline/step2_leakage.py` | drops the PHQ-9 items and concurrent mental-health measures |
-| `pipeline/step3_cycle_overlap.py` | which features exist in all seven cycles |
-| `pipeline/step4_rename.py` | merges variables that were only renamed (checked against the codebooks) |
-| `pipeline/step5_missing.py` | missing rates in the population, per cycle |
-| `pipeline/step6_gates.py` | finds the gate question of each skip-pattern follow-up from the data |
-| `pipeline/fetch_codebooks.py` | downloads the CDC codebooks and extracts each variable's code table |
-| `pipeline/build_features.py` (+ `harmonize.py`) | builds the table: skip patterns, checkboxes, derived and recoded features, diet days, missing threshold |
+| `pipeline/labels.ipynb` | reads every variable label from the file headers |
+| `pipeline/step1_nonfeature.ipynb` | drops ids, weights, design variables, lab comment codes, unit duplicates, process variables |
+| `pipeline/step2_leakage.ipynb` | drops the PHQ-9 items and concurrent mental-health measures |
+| `pipeline/step3_cycle_overlap.ipynb` | which features exist in all seven cycles |
+| `pipeline/step4_rename.ipynb` | merges variables that were only renamed (checked against the codebooks) |
+| `pipeline/step5_missing.ipynb` | missing rates in the population, per cycle |
+| `pipeline/step6_gates.ipynb` | finds the gate question of each skip-pattern follow-up from the data |
+| `pipeline/fetch_codebooks.ipynb` | downloads the CDC codebooks and extracts each variable's code table |
+| `pipeline/build_features.ipynb` | builds the table: skip patterns, checkboxes, derived and recoded features, diet days, missing threshold |
 
-`modeling/step0_cycle_check.py` is a check to run before modelling: it measures how well the
+Code used by more than one notebook lives in `nhanes/`:
+
+| Module | Contents |
+|---|---|
+| `paths.py`, `io.py`, `download.py` | where data and outputs live, reading NHANES files, the download |
+| `cohort.py` | the analysis population and cycle names |
+| `harmonize.py` | items recoded across cycles, prescription counts, PFOA / PFOS totals, lab calibrations |
+| `loco.py` | leave-one-cycle-out design matrix, elastic net, XGBoost, CatBoost, tuning, metrics |
+| `paper1.py`, `vae.py` | the 86 variables of Dang et al. (2024) and the denoising VAE (modeling steps 3–8) |
+| `plots.py` | result figures of the modeling notebooks |
+
+## Modeling (`modeling/`)
+
+One notebook per step, results and figures saved; the record of every step (in Chinese) is
+`modeling/README.md`. Each notebook has `RUN = False` at the top: it then only reads the saved
+results in `$NHANES_WORK/modeling/` and draws them. `RUN = True` retrains (hours for most steps;
+`QUICK = True` runs one fold to check the setup). Retraining needs more packages than the
+pipeline: catboost, torch, `tabm==0.0.3`, `rtdl_num_embeddings==0.0.12`; step 8b needs
+`modeling/requirements-foundation.txt`.
+
+`modeling/step0_cycle_check.ipynb` is a check to run before modelling: it measures how well the
 features alone can tell the cycles apart, to find differences between cycles that are left.
 
 ## Data analysis (`data_analysis/`)

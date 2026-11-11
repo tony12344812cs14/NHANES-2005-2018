@@ -1,9 +1,9 @@
 NHANES 2005-2018 跳答缺失處理盤點（待確認，尚未實作）
 整理日期：2026-10-28
 
-族群：≥20 歲、非懷孕（RIDEXPRG != 1）、PHQ-9 九題都答 0-3，共 33,498 人（step5_missing.py）
+族群：≥20 歲、非懷孕（RIDEXPRG != 1）、PHQ-9 九題都答 0-3，共 33,498 人（step5_missing.ipynb）
 範圍：7 個 cycle 都有的 640 個特徵（missing_rates.csv）
-閘門題由資料推得（step6_gates.py -> gates.csv）：
+閘門題由資料推得（step6_gates.ipynb -> gates.csv）：
   purity   = 有答 F 的人裡，閘門 G 落在 S 的比例（≈1 表示 F 只問 G∈S 的人）
   coverage = G∈S 的人裡，有答 F 的比例（≈1 表示 G∈S 的人都會被問 F）
 年齡 / 性別限制由「各年齡層、性別的缺失率」確認。
@@ -205,16 +205,16 @@ D. codebook 確認：身體功能 PFQ061A-T（PFQ_D 2005-06、PFQ_J 2017-18，�
          不算困難，但另外記一個「不做的項目數」；或當缺失。建議前者。
 
 決定（使用者 10/28）：DUQ240 / DUQ370 全部 cycle 統一以 20-59 歲為適用範圍；
-HIQ105 改歸 step1 process（已改 step1_nonfeature.py）。
+HIQ105 改歸 step1 process（已改 step1_nonfeature.ipynb）。
 
 補充（10/28 做視覺總結時發現）：另外 3 題也是只問特定年齡，同樣用 (b) 標 -1：
   WHD110（10 年前體重）只問 36 歲以上；DBQ301 / DBQ330（送餐 / 社區用餐）只問 60 歲以上。
   HIQ260（有沒有 Medicare）只問 65 歲以上、且 HIQ031B 沒勾 Medicare 的人（年齡 + 閘門）。
 
 ======================================================================
-八、實作（10/28，build_features.py -> features/）
+八、實作（10/28，build_features.ipynb -> features/）
 ======================================================================
-  拒答 / 不知道：下載 275 個 CDC codebook 頁（fetch_codebooks.py -> codebooks/、codebook_values.csv），
+  拒答 / 不知道：下載 275 個 CDC codebook 頁（fetch_codebooks.ipynb -> codebooks/、codebook_values.csv），
      說明為 Refused / Don't know / Don't know/not sure 的代碼一律設 NaN（每個變數用自己的代碼）。
   實作時另外發現並修正：
      - RHD280（子宮切除）2005-06 只問「過去一年月經不規律」的女性，月經規律者沒被問 -> 0

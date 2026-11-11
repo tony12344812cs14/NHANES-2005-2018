@@ -1,34 +1,20 @@
-"""Step 1: baseline and main model, leave-one-cycle-out (LOCO).
+"""Leave-one-cycle-out (LOCO) modelling shared by the modeling notebooks.
 
-Each of the 7 cycles is the test set once; the other 6 train the model. Hyper-parameters are chosen
-by an inner LOCO over the 6 training cycles (mean inner AUROC); preprocessing is fit on training rows
-only. Outcome: depression = PHQ-9 >= 10.
+Moved unchanged from modeling/step1_loco.py (design matrix, elastic net, XGBoost, inner-LOCO tuning,
+metrics, run_loco) and modeling/step2_more_models.py (CatBoost, free_gpu), because later steps reuse them.
 
-Models
-  logreg   elastic-net logistic regression. Categorical features one-hot (-1 and missing are their
-           own levels); numeric features: -1 -> 'not applicable' indicator + NaN, median imputation,
-           standardised.
-  xgboost  gradient-boosted trees on the table as it is (NaN and -1 handled by the trees); number
-           of trees by early stopping in the inner folds.
-Both use class weights for the 8.9% prevalence.
-
-Metrics (primary: AUROC, the mean over the 7 test cycles, each cycle weighted equally)
-  per test cycle: AUROC, survey-weighted AUROC (WTMEC2YR), AUPRC, Brier score; plus the AUROC of
-  all out-of-cycle predictions pooled.
-
-Usage: python modeling/step1_loco.py [--quick]   (--quick: one outer fold, smallest grids)
-Output: <NHANES_WORK>/modeling/step1/ predictions.csv.gz, metrics.csv, chosen_params.json, report.txt
+Outcome: depression = PHQ-9 >= 10. Each of the 7 cycles is the test set once; hyper-parameters are chosen
+by an inner LOCO over the 6 training cycles (mean inner AUROC); preprocessing is fit on training rows only.
 """
-import argparse
 import itertools
 import json
-import sys
+import subprocess
 import time
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import xgboost as xgb
+from catboost import CatBoostClassifier
 from joblib import Parallel, delayed
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
@@ -37,11 +23,9 @@ from sklearn.metrics import average_precision_score, brier_score_loss, roc_auc_s
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-sys.path[:0] = [str(Path(__file__).resolve().parents[1]), str(Path(__file__).resolve().parent)]
-from nhanes.paths import RESULTS, THREADS, WORK  # noqa: E402
+from nhanes.paths import THREADS, WORK
 
 FEAT = WORK / "features"
-OUT = RESULTS / "step1"
 NOT_FEATURES = ["SEQN", "cycle", "SDMVPSU", "SDMVSTRA", "WTINT2YR", "WTMEC2YR", "PHQ9", "depression"]
 SEED = 42
 LOGREG_GRID = {"C": [0.01, 0.1, 1.0], "l1_ratio": [0.0, 0.5, 1.0]}
@@ -132,15 +116,6 @@ def metrics(y, p, w):
             "n": len(y), "prevalence": float(np.mean(y))}
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--quick", action="store_true")
-    args = ap.parse_args()
-    data = pd.read_csv(FEAT / "features_2005_2018.csv.gz")
-    dic = pd.read_csv(FEAT / "feature_dictionary.csv").set_index("column").type.to_dict()
-    run_loco(data, dic, OUT, args.quick)
-
-
 def run_loco(data, dic, out, quick=False, title="leave-one-cycle-out, outcome PHQ-9 >= 10",
              models=("logreg", "xgboost")):
     """LOCO for logreg and xgboost on `data` (NOT_FEATURES columns + features); `dic` maps feature -> type."""
@@ -188,5 +163,51 @@ def run_loco(data, dic, out, quick=False, title="leave-one-cycle-out, outcome PH
     print("\n".join(lines))
 
 
-if __name__ == "__main__":
-    main()
+CAT_GRID = [4, 6]
+CAT_FIXED = dict(learning_rate=0.05, iterations=3000, od_type="Iter", od_wait=100, eval_metric="AUC",
+                 auto_class_weights="Balanced", thread_count=THREADS, random_seed=SEED, verbose=False,
+                 allow_writing_files=False)
+
+
+def cat_frame(X, cat):
+    X = X.copy()
+    X[cat] = X[cat].astype("float").fillna(-99).astype(int).astype(str)  # missing = own level
+    return X
+
+
+def run_catboost(data, train_cycles, test_c, dic):
+    feats = [c for c in data if c not in NOT_FEATURES]
+    cat = [c for c in feats if dic.get(c) == "categorical"]
+    scores, iters = {d: [] for d in CAT_GRID}, {d: [] for d in CAT_GRID}
+    for val_c in train_cycles:
+        tr, va = data[data.cycle.isin(train_cycles) & (data.cycle != val_c)], data[data.cycle == val_c]
+        Xtr, Xva = cat_frame(tr[feats], cat), cat_frame(va[feats], cat)
+        for depth in CAT_GRID:
+            m = CatBoostClassifier(depth=depth, cat_features=cat, **CAT_FIXED)
+            m.fit(Xtr, tr.depression, eval_set=(Xva, va.depression), use_best_model=True)
+            scores[depth].append(roc_auc_score(va.depression, m.predict_proba(Xva)[:, 1]))
+            iters[depth].append(m.get_best_iteration() + 1)
+    depth = max(scores, key=lambda d: np.mean(scores[d]))
+    n = int(np.median(iters[depth]))
+    tr, te = data[data.cycle != test_c], data[data.cycle == test_c]
+    fixed = {k: v for k, v in CAT_FIXED.items() if k not in ("iterations", "od_type", "od_wait")}
+    m = CatBoostClassifier(depth=depth, iterations=n, cat_features=cat, **fixed)
+    m.fit(cat_frame(tr[feats], cat), tr.depression)
+    prob = m.predict_proba(cat_frame(te[feats], cat))[:, 1]
+    return prob, {"depth": depth, "iterations": n, "inner_auroc": round(float(np.mean(scores[depth])), 4)}
+
+
+def free_gpu():
+    """Index of a GPU with no compute process on it, else None (never share a GPU)."""
+    import torch
+    if not torch.cuda.is_available():
+        return None
+    q = lambda args: subprocess.run(["nvidia-smi", *args, "--format=csv,noheader"],  # noqa: E731
+                                    capture_output=True, text=True).stdout.split("\n")
+    busy = {line.split(",")[0].strip() for line in q(["--query-compute-apps=gpu_uuid"]) if line.strip()}
+    for line in q(["--query-gpu=index,uuid"]):
+        if line.strip():
+            idx, uuid = [s.strip() for s in line.split(",")]
+            if uuid not in busy:
+                return int(idx)
+    return None

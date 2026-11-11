@@ -1,7 +1,7 @@
 NHANES 2005-2018 跨 cycle 改名但「不能直接合併」的特徵（暫緩，日後需要再處理）
 整理日期：2026-10-28
 範圍：2005-06 ~ 2017-18 共 7 個 cycle（不含 2017-2020 P_）
-已直接合併的純改名見 rename_map.csv（step4_rename.py），不在此檔。
+已直接合併的純改名見 rename_map.csv（step4_rename.ipynb），不在此檔。
 
 每一項的格式：
   名字    ：舊變數 -> 新變數 [出現的 cycle]，合併後可涵蓋幾個 cycle
@@ -277,7 +277,7 @@ D1. PFOA / PFOS
   證據等級：paper3 已實作
 
 ======================================================================
-處理結果（10/28，harmonize.py；對照 codebook_values.csv 的 CDC 代碼表，閘門逐 cycle 驗證）
+處理結果（10/28，nhanes/harmonize.py；對照 codebook_values.csv 的 CDC 代碼表，閘門逐 cycle 驗證）
 ======================================================================
 已做成特徵（feature_dictionary.csv kind = harmonized）：
   A3 DBQ223U        2009+ 其他 OR 豆奶 -> 與 2005-08 的「其他」同義
