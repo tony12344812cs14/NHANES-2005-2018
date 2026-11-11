@@ -72,6 +72,17 @@ Tree models can use the table as it is. For linear models, one-hot the categoric
 `modeling/step0_cycle_check.py` is a check to run before modelling: it measures how well the
 features alone can tell the cycles apart, to find differences between cycles that are left.
 
+## Data analysis (`data_analysis/`)
+
+Descriptive notebooks, saved with their figures so they can be read on GitHub without running
+anything. To rerun, set `NHANES_DATA` / `NHANES_WORK` as for the pipeline, then Run All; tables
+and PNGs go to `$NHANES_WORK/data_analysis/`.
+
+| Notebook | Contents |
+|---|---|
+| `01_cohort_and_class_distribution.ipynb` | cohort selection per cycle from the raw DEMO / DPQ files (checked against the feature table), class balance overall and per cycle |
+| `02_feature_eda.ipynb` | feature types, missing and not-applicable rates per cycle, cross-cycle distributions, feature–target rates, correlations |
+
 ## Decisions
 
 Every decision, with the evidence behind it, is in `docs/` (in Chinese):
