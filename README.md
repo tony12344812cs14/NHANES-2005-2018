@@ -114,8 +114,8 @@ Every decision, with the evidence behind it, is in `docs/` (in Chinese):
   diet days, medications.
 - `docs/pending_features.txt`: variables renamed between cycles that are not pure renames, and
   how each was recoded or why it was dropped.
-- `docs/external_data.md`: external validation, which datasets were considered and why NHIS was
-  chosen, and which features have an NHIS counterpart.
+- `docs/external_data.md`: external validation, which datasets were considered (KNHANES, NHIS),
+  and which features have a counterpart in each.
 
 A few that matter when you use the table:
 
