@@ -80,6 +80,7 @@ Code used by more than one notebook lives in `nhanes/`:
 | `cohort.py` | the analysis population and cycle names |
 | `harmonize.py` | items recoded across cycles, prescription counts, PFOA / PFOS totals, lab calibrations |
 | `loco.py` | leave-one-cycle-out design matrix, elastic net, XGBoost, CatBoost, tuning, metrics |
+| `knhanes.py` | KNHANES 2014 / 2016 in the NHANES feature definitions (needs the KNHANES files in `KNHANES_DATA`) |
 | `paper1.py`, `vae.py` | the 86 variables of Dang et al. (2024) and the denoising VAE (modeling steps 3–8) |
 | `plots.py` | result figures of the modeling notebooks |
 
@@ -98,13 +99,14 @@ features alone can tell the cycles apart, to find differences between cycles tha
 ## Data analysis (`data_analysis/`)
 
 Descriptive notebooks, saved with their figures so they can be read on GitHub without running
-anything. To rerun, set `NHANES_DATA` / `NHANES_WORK` as for the pipeline, then Run All; tables
+anything. To rerun, set `NHANES_DATA` / `NHANES_WORK` as for the pipeline (03 also needs the KNHANES files, see `nhanes/knhanes.py`), then Run All; tables
 and PNGs go to `$NHANES_WORK/data_analysis/`.
 
 | Notebook | Contents |
 |---|---|
 | `01_cohort_and_class_distribution.ipynb` | cohort selection per cycle from the raw DEMO / DPQ files (checked against the feature table), class balance overall and per cycle |
 | `02_feature_eda.ipynb` | feature types, missing and not-applicable rates per cycle, cross-cycle distributions, feature–target rates, correlations |
+| `03_knhanes_vs_nhanes.ipynb` | KNHANES 2014 / 2016 (Korea) against NHANES: outcome, distribution of each shared feature, how well the two can be told apart, and whether each feature relates to depression the same way |
 
 ## Decisions
 
