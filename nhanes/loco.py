@@ -81,14 +81,17 @@ def _logreg_auc(Xtr, ytr, Xva, yva, p):
     return roc_auc_score(yva, fit_logreg(Xtr, ytr, p).predict_proba(Xva)[:, 1])
 
 
-def tune(model, data, train_cycles, dic, grid_):
+def tune(model, data, train_cycles, dic, grid_, extra_train=None):
     """Inner LOCO over the training cycles; returns the best params (and #trees for xgboost).
-    The saga solver is single-threaded, so logistic-regression fits run THREADS at a time."""
+    The saga solver is single-threaded, so logistic-regression fits run THREADS at a time.
+    extra_train: rows added to every inner training set, never used for validation."""
     scores = {i: [] for i in range(len(grid_))}
     trees = {i: [] for i in range(len(grid_))}
     jobs = []
     for val_c in train_cycles:
         tr = data[data.cycle.isin(train_cycles) & (data.cycle != val_c)]
+        if extra_train is not None:
+            tr = pd.concat([tr, extra_train], ignore_index=True)
         va = data[data.cycle == val_c]
         Xtr, Xva = tr.drop(columns=NOT_FEATURES), va.drop(columns=NOT_FEATURES)
         if model == "logreg":
@@ -117,8 +120,10 @@ def metrics(y, p, w):
 
 
 def run_loco(data, dic, out, quick=False, title="leave-one-cycle-out, outcome PHQ-9 >= 10",
-             models=("logreg", "xgboost")):
-    """LOCO for logreg and xgboost on `data` (NOT_FEATURES columns + features); `dic` maps feature -> type."""
+             models=("logreg", "xgboost"), extra_train=None):
+    """LOCO for logreg and xgboost on `data` (NOT_FEATURES columns + features); `dic` maps feature -> type.
+    extra_train: rows with the same columns added to every training set (outer and inner), never
+    tested or used for validation, e.g. another survey."""
     out.mkdir(parents=True, exist_ok=True)
     cycles = sorted(data.cycle.unique())
     outer = cycles[:1] if quick else cycles
@@ -130,10 +135,13 @@ def run_loco(data, dic, out, quick=False, title="leave-one-cycle-out, outcome PH
     for test_c in outer:
         train_cycles = [c for c in cycles if c != test_c]
         tr, te = data[data.cycle != test_c], data[data.cycle == test_c]
+        if extra_train is not None:
+            tr = pd.concat([tr, extra_train[data.columns]], ignore_index=True)
         Xtr, Xte = tr.drop(columns=NOT_FEATURES), te.drop(columns=NOT_FEATURES)
         for model in models:
             t0 = time.time()
-            params, inner_auc = tune(model, data, train_cycles, dic, grids[model])
+            params, inner_auc = tune(model, data, train_cycles, dic, grids[model],
+                                     None if extra_train is None else extra_train[data.columns])
             if model == "logreg":
                 A, B = logreg_matrix(Xtr, Xte, dic)
                 prob = fit_logreg(A, tr.depression, params).predict_proba(B)[:, 1]

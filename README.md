@@ -26,7 +26,10 @@ If your `python3` is older, conda can provide one:
 `conda create -n nhanes python=3.12 && conda activate nhanes`, then the last two lines above.
 
 Everything is public: the script downloads the NHANES files from the CDC website, so no data
-are stored in this repository. Set `NHANES_DATA` and `NHANES_WORK` to put data and outputs
+are stored in this repository. The external-data notebooks (`data_analysis/03`, modeling steps
+10–11) also need KNHANES 2014 and 2016, which require a free registration at
+https://knhanes.kdca.go.kr: put `hn14_all.sas7bdat` and `hn16_all.sas7bdat` in one folder and set
+`KNHANES_DATA` to it. Set `NHANES_DATA` and `NHANES_WORK` to put data and outputs
 somewhere other than `./data` and `./outputs`; set `THREADS` to change the CPU threads (default 4).
 If the data are already downloaded, `./run_pipeline.sh --skip-download`.
 
@@ -79,7 +82,7 @@ Code used by more than one notebook lives in `nhanes/`:
 | `paths.py`, `io.py`, `download.py` | where data and outputs live, reading NHANES files, the download |
 | `cohort.py` | the analysis population and cycle names |
 | `harmonize.py` | items recoded across cycles, prescription counts, PFOA / PFOS totals, lab calibrations |
-| `loco.py` | leave-one-cycle-out design matrix, elastic net, XGBoost, CatBoost, tuning, metrics |
+| `loco.py` | leave-one-cycle-out design matrix, elastic net, XGBoost, CatBoost, tuning, metrics; optional extra training rows from another survey (`extra_train`) |
 | `knhanes.py` | KNHANES 2014 / 2016 in the NHANES feature definitions (needs the KNHANES files in `KNHANES_DATA`) |
 | `paper1.py`, `vae.py` | the 86 variables of Dang et al. (2024) and the denoising VAE (modeling steps 3–8) |
 | `plots.py` | result figures of the modeling notebooks |
@@ -95,6 +98,10 @@ pipeline: catboost, torch, `tabm==0.0.3`, `rtdl_num_embeddings==0.0.12`; step 8b
 
 `modeling/step0_cycle_check.ipynb` is a check to run before modelling: it measures how well the
 features alone can tell the cycles apart, to find differences between cycles that are left.
+
+Steps 9–11 are about external data (KNHANES, Korea; see `docs/external_data.md`): step 9 keeps only
+the features KNHANES also has, step 10 trains on NHANES and tests on KNHANES, step 11 adds KNHANES to
+the training data. Steps 10–11 need the KNHANES files (see below).
 
 ## Data analysis (`data_analysis/`)
 
@@ -136,3 +143,5 @@ A few that matter when you use the table:
 
 National Center for Health Statistics, National Health and Nutrition Examination Survey,
 2005–2018, https://wwwn.cdc.gov/nchs/nhanes/. Drug categories: NHANES RXQ_DRUG (Multum Lexicon).
+External data: Korea Disease Control and Prevention Agency, Korea National Health and Nutrition
+Examination Survey (KNHANES), 2014 and 2016, https://knhanes.kdca.go.kr.
