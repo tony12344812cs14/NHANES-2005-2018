@@ -357,3 +357,25 @@
 - 多切點版本較差：≥ 10 / 15 / 20 的樹數撞到 2000 上限，early stopping 沒停（依事先固定的設定照實報告）。
 - Poisson XGBoost（0.793）追平論文的 0.793，但仍比 TabPFN 低 0.006（10 折全輸）。
 - 最終：paper1 變數下最佳為 TabPFN 總分訓練 0.799，比 paper1 的方法高 0.012（95% CI 0.009–0.016）。
+
+### 11/12 Step 9：只用 KNHANES 也有的特徵，leave-one-cycle-out
+
+`step9_knhanes_features.ipynb`。外部驗證要拿到韓國的 KNHANES 測試（討論與對照表見 `docs/external_data.md`），所以先在 NHANES 內部量精簡特徵要付出多少代價。設計和 step 1 完全相同（LOCO、內層 LOCO 調參、elastic net / XGBoost、PHQ-9 ≥ 10），只換特徵：
+
+- **k125**：317 個中在 KNHANES 找得到對應的 125 個（`docs/knhanes_mapping.csv`），包含檢驗、血壓、體位、飲食。
+- **k114**：其中 KNHANES 2014、2016 兩年都有的 114 個。
+
+特徵維持 NHANES 的定義，還沒轉成 KNHANES 的定義（收入級距、空腹檢驗、1 天飲食），所以這是外部測試的上限。
+
+結果（7 個測試 cycle 的平均 ± 標準差；step 1 是全部 317 個）：
+
+| 特徵 | elastic net | XGBoost | 相對 317 個（elastic net / XGBoost，逐 cycle 平均） |
+|---|---|---|---|
+| 全部 317（step 1） | 0.874 ± 0.011 | 0.871 ± 0.010 | |
+| k125 | 0.838 ± 0.014 | 0.838 ± 0.013 | −0.036 / −0.033（每個 cycle 都降 0.021–0.049） |
+| k114 | 0.834 ± 0.013 | 0.833 ± 0.011 | −0.039 / −0.038 |
+
+- 精簡到 KNHANES 也有的特徵，AUROC 掉約 0.035。7 個 cycle 都下降，和 step 1 一樣是 2017–18 最低（0.812）。
+- 只有 2016 有的 11 個特徵（只多 0.004）影響不大，外部測試可以用 k114，讓 2014 和 2016 兩年用同一組特徵。
+- k125 仍比 paper1 的 86 個特徵（step 3：0.79–0.80）高約 0.04。
+- 計算只用 CPU（`CUDA_VISIBLE_DEVICES=""`，8 個執行緒），兩組共 45 分鐘。

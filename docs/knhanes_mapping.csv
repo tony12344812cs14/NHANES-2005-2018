@@ -1,0 +1,126 @@
+feature,knhanes,years,match,note
+RIDAGEYR,age,both,exact,KNHANES 上限 80
+RIAGENDR,sex,both,exact,
+DMDEDUC2,edu / educ,both,recode,學制不同，合併成 4–5 級
+DMDMARTL,marri_1 + marri_2,both,recode,
+DMDHHSIZ,cfam,both,exact,
+DMDFMSIZ,cfam,both,recode,KNHANES 只有家戶人數
+fam_income_cat,ainc,both,recode,韓元月收入，要換成相對級距
+hh_income_cat,ainc,both,recode,同上
+HSD010,D_1_1,both,exact,
+HUQ010,D_1_1,both,exact,和 HSD010 同一題
+HUQ071,MH1_yr,2016,exact,只有 2016
+HIQ031A,npins,both,recode,韓國是補充型私人保險，意義不同
+htn_dx,DI1_dg,both,exact,
+htn_med,DI1_2,both,recode,
+chol_dx,DI2_dg,both,recode,問的是「血脂異常」
+chol_med,DI2_2,both,exact,
+diabetes_status,DE1_dg,both,recode,沒有「邊緣」選項
+insulin,DE1_31,both,recode,只問糖尿病患者
+diabetes_pills,DE1_32,both,exact,
+MCQ010,DJ4_dg,both,exact,
+asthma_current,DJ4_pr,both,exact,
+MCQ160A,DM1_dg,both,exact,
+arthritis_type,DM2_dg + DM3_dg,both,recode,骨關節炎 / 類風濕
+MCQ160C,DI4_dg,both,recode,心肌梗塞或心絞痛合併一題
+MCQ160D,DI6_dg,both,exact,
+MCQ160E,DI5_dg,both,exact,
+MCQ160F,DI3_dg,both,exact,
+MCQ160G,HE_PFTdr,both,recode,COPD 診斷
+MCQ160K,HE_PFTdr,both,recode,同上
+MCQ160L,DK4_dg / DK8_dg / DK9_dg,both,recode,肝硬化、B 肝、C 肝合併
+liver_current,DK4_pr / DK8_pr / DK9_pr,both,recode,
+MCQ160M,DE2_dg,both,exact,
+thyroid_current,DE2_pr,both,exact,
+MCQ220,DC*_dg,both,recode,各癌別合併
+MCQ300A,HE_IHDfh1–3,both,recode,缺血性心臟病家族史
+MCQ300C,HE_DMfh1–3,both,recode,
+KIQ022,DN1_dg,both,recode,問「腎衰竭」
+smoking_status,BS1_1 + BS3_1,both,recode,
+cigs_per_day,BS3_2,both,exact,
+home_smoke_inside,BS9_2,both,recode,問家中二手菸暴露
+alcohol_freq,BD1_11,both,recode,類別不同
+drinks_per_day,BD2_1,both,recode,以「杯」分類，標準杯不同
+binge_freq,BD2_31,both,recode,門檻不同（男 7 杯 / 女 5 杯）
+sleep_hours,Total_slp_wk,2016,recode,只有 2016；平日平均
+hours_worked,EC_wht_23,both,recode,
+OCD150,EC1_1,both,recode,
+not_working_reason,EC1_2,both,recode,
+HOQ065,house,both,recode,
+WHQ030,BO1,both,recode,自覺體型
+WHQ070,BO2_1,both,recode,
+WHD050,BO1_1–BO1_3,both,recode,只有體重變化方向和量
+WHD080A,BO3_03,both,exact,
+WHD080D,BO3_01,both,exact,
+WHD080E,BO3_14,both,exact,
+WHD080I,BO3_04,both,exact,
+WHD080J,BO3_05 / BO3_07,both,recode,
+RHQ010,LW_ms_a,both,exact,
+RHQ031,LW_ms,both,recode,
+RHQ131,LW_pr,both,exact,
+RHQ160,LW_pr_1,both,exact,
+RHQ420,LW_oc,both,recode,
+PFQ049,LQ4_00,both,recode,活動受限
+BMXBMI,HE_BMI,both,exact,
+BMXHT,HE_ht,both,exact,
+BMXWT,HE_wt,both,exact,
+BMXWAIST,HE_wc,both,exact,
+BPXSY1,HE_sbp1,both,recode,量測儀器與流程要核對
+BPXSY2,HE_sbp2,both,recode,同上
+BPXSY3,HE_sbp3,both,recode,同上
+BPXDI1,HE_dbp1,both,recode,同上
+BPXDI2,HE_dbp2,both,recode,同上
+BPXDI3,HE_dbp3,both,recode,同上
+BPXPLS,HE_mPLS,both,exact,
+BPXPULS,HE_rPLS,both,exact,
+LBXSASSI,HE_ast,both,exact,儀器不同
+LBXSATSI,HE_alt,both,exact,儀器不同
+LBXSBU,HE_BUN,both,exact,
+LBXSCR,HE_crea,both,exact,
+LBXSCH,HE_chol,both,recode,KNHANES 是空腹檢體
+LBXSGL,HE_glu,both,recode,NHANES 生化盤非空腹，KNHANES 是空腹血糖
+LBXSTR,HE_TG,both,recode,空腹對非空腹
+LBXSUA,HE_Uacid,2016,exact,只有 2016
+URXUCR,HE_UCREA,both,exact,
+LBXTC,HE_chol,both,exact,
+LBDHDD,HE_HDL_st2,both,exact,KNHANES 已換算
+LBXGH,HE_HbA1c,both,exact,
+LBXCOT,HE_Ucot,both,recode,血清對尿液 cotinine
+LBXWBCSI,HE_WBC,both,exact,
+LBXRBCSI,HE_RBC,both,exact,
+LBXHGB,HE_HB,both,exact,
+LBXHCT,HE_HCT,both,exact,
+LBXMCVSI,HE_MCV,both,exact,
+LBXMCHSI,HE_MCH,both,exact,
+LBXMC,HE_MCHC,both,exact,
+LBXPLTSI,HE_Bplt,both,exact,
+DR_TKCAL,N_EN,both,recode,飲食都是 1 天回憶（NHANES 取 2 天平均），食物成分表不同
+DR_TMOIS,N_WATER,both,recode,同上
+DR_TPROT,N_PROT,both,recode,同上
+DR_TTFAT,N_FAT,both,recode,同上
+DR_TSFAT,N_SFA,both,recode,同上
+DR_TMFAT,N_MUFA,both,recode,同上
+DR_TPFAT,N_PUFA,both,recode,同上
+DR_TCARB,N_CHO,both,recode,同上
+DR_TCALC,N_CA,both,recode,同上
+DR_TPHOS,N_PHOS,both,recode,同上
+DR_TSODI,N_NA,both,recode,同上
+DR_TPOTA,N_K,both,recode,同上
+DR_TIRON,N_FE,both,recode,同上
+DR_TBCAR,N_CAROT,both,recode,同上
+DR_TRET,N_RETIN,both,recode,同上
+DR_TVB1,N_B1,both,recode,同上
+DR_TVB2,N_B2,both,recode,同上
+DR_TNIAC,N_NIAC,both,recode,同上
+DR_TVC,N_VITC,both,recode,同上
+DR_TCHOL,N_CHOL,2016,recode,只有 2016
+DR_TFIBE,N_TDF,2016,recode,只有 2016
+DR_TSUGR,N_SUGAR,2016,recode,只有 2016
+DR_TMAGN,N_MG,2016,recode,只有 2016
+DR_TZINC,N_ZN,2016,recode,只有 2016
+DR_TVARA,N_VA_RAE,2016,recode,只有 2016
+DR_TATOC,N_VITE,2016,recode,只有 2016；α-TE 對 α-tocopherol
+DR_TFDFE,N_FOLATE,2016,recode,只有 2016
+DR_300,N_DUSUAL,both,exact,
+DRQSDIET,N_DIET,both,exact,
+DR_320Z,N_WAT_C,both,recode,以杯計

@@ -1,0 +1,76 @@
+feature,nhis_2019,nhis_2022,match,note
+RIDAGEYR,AGEP_A,AGEP_A,exact,NHIS top-coded 85; NHANES 80
+RIAGENDR,SEX_A,SEX_A,exact,
+RIDRETH1,HISPALLP_A,HISPALLP_A,recode,collapse to NHANES 5 groups
+DMDEDUC2,EDUC_A,EDUCP_A,recode,collapse to 5 levels
+DMDMARTL,MARSTAT_A,MARSTAT_A,recode,6 NHANES levels from marital + legal status
+DMDCITZN,CITZNSTP_A,CITZNSTP_A,exact,
+born_us,NATUSBORN_A,NATUSBORN_A,recode,NHIS counts US territories as US-born
+years_in_us,YRSINUS_A,YRSINUS_A,recode,category cut points differ
+DMDFMSIZ,PCNTFAM_A,PCNTADLT_A+PCNTKIDS_A,recode,NHIS top-coded 6+ (NHANES 7+)
+DMDHHSIZ,PCNTTC,PCNT18UPTC+PCNTLT18TC,recode,top-coding differs
+INDFMPIR,POVRATTC_A,POVRATTC_A,recode,cap at 5 like NHANES
+fam_income_cat,FAMINCTC_A,FAMINCTC_A,recode,dollars -> NHANES bands
+hh_income_cat,,,none,NHIS has family income only
+military_service,AFVET_A,AFVET_A,exact,active duty (NHANES 2011+ wording)
+RIDEXMON,INTV_QRT,INTV_QRT,recode,quarter -> Nov-Apr / May-Oct only roughly
+hh_spouse_edu3,SPOUSEDUC_A,SPOUSEDUCP_A,recode,spouse of SA not of HH reference person
+HSD010,PHSTAT_A,PHSTAT_A,exact,
+HUQ010,PHSTAT_A,PHSTAT_A,exact,same question as HSD010
+HUQ030,USUALPL_A,USUALPL_A,exact,
+usual_care_place,USPLKIND_A,USPLKIND_A,recode,
+HUQ071,HOSPONGT_A,HOSPONGT_A,exact,
+HIQ011,HICOV_A,HICOV_A,exact,
+HIQ031A,HIKIND01_A,HIKIND01_A,exact,
+HIQ031B,HIKIND02_A,HIKIND02_A,exact,
+HIQ031C,HIKIND03_A,HIKIND03_A,exact,
+HIQ031D,HIKIND04_A,HIKIND04_A,exact,
+HIQ031F,HIKIND06_A,HIKIND06_A,exact,
+HIQ031H,HIKIND08_A,HIKIND08_A,exact,
+HIQ031I,HIKIND09_A,HIKIND09_A,exact,
+insurance_type,COVER_A/COVER65_A,COVER_A/COVER65_A,recode,
+HIQ210,HINOTYR_A,HINOTYR_A,recode,
+HIQ270,PRRXCOV1_A,PRRXCOV1_A,recode,private plan only
+htn_dx,HYPEV_A,HYPEV_A,exact,
+htn_med,HYPMED_A,HYPMED_A,exact,
+chol_dx,CHLEV_A,CHLEV_A,exact,
+chol_med,CHLMED_A,CHLMED_A,exact,
+chol_last_checked,CHOLLAST_A,,recode,2019 only
+chol_checked,CHOLLAST_A,,recode,2019 only
+diabetes_status,DIBEV_A+PREDIB_A,DIBEV_A+PREDIB_A,recode,borderline not asked as such
+DIQ160,PREDIB_A,PREDIB_A,exact,
+DIQ180,DIABLAST_A,,recode,2019 only
+insulin,DIBINS_A,DIBINS_A,recode,NHIS asks diabetics only
+diabetes_pills,DIBPILL_A,DIBPILL_A,exact,
+MCQ010,ASEV_A,ASEV_A,exact,
+asthma_current,ASTILL_A,ASTILL_A,exact,
+MCQ160A,ARTHEV_A,ARTHEV_A,exact,
+MCQ160C,CHDEV_A,CHDEV_A,exact,
+MCQ160D,ANGEV_A,ANGEV_A,exact,
+MCQ160E,MIEV_A,MIEV_A,exact,
+MCQ160F,STREV_A,STREV_A,exact,
+MCQ160G,COPDEV_A,COPDEV_A,recode,NHIS asks COPD/emphysema/bronchitis as one question
+MCQ160K,COPDEV_A,COPDEV_A,recode,same combined question
+MCQ220,CANEV_A,CANEV_A,exact,
+PFQ049,SOCWRKLIM_A,SOCWRKLIM_A,recode,
+PFQ054,EQUIP_A,EQUIP_A,recode,
+PFQ057,COGMEMDFF_A,COGMEMDFF_A,recode,
+pf_difficulty_count,Washington Group items,Washington Group items,recode,different set of activities
+RHD280,HYSTEV_A,,exact,2019 only
+RHQ131,LIVEBIRTH_A,LIVEBIRTH_A,recode,live birth vs ever pregnant
+smoking_status,SMKCIGST_A,SMKCIGST_A,exact,
+cigs_per_day,CIGNOW_A,CIGNOW_A,recode,
+alcohol_freq,,DRK12MN_A/DRK12MTP_A,recode,2022 only
+drinks_per_day,,DRKAVG12M_A,exact,2022 only
+binge_freq,,DRKBNG30D_A,recode,2022 only; 30 days vs 12 months
+sleep_hours,,SLPHOURS_A,recode,2022 only; 24 h vs weekday night
+hours_worked,EMPWKHRS2_A,EMPWKHRS3_A,exact,
+OCD150,EMPWRKLSWK_A,EMPLASTWK_A,recode,
+not_working_reason,EMPRSNOWK_A,EMPWHYNOT_A,recode,
+HOQ065,HOUTENURE_A,HOUTENURE_A,exact,
+WHD010,HEIGHTTC_A,HEIGHTTC_A,exact,self-reported in both
+WHD020,WEIGHTLBTC_A,WEIGHTLBTC_A,exact,self-reported in both
+BMXBMI,HEIGHTTC_A+WEIGHTLBTC_A,HEIGHTTC_A+WEIGHTLBTC_A,recode,measured in NHANES vs self-reported in NHIS
+BMXHT,HEIGHTTC_A,HEIGHTTC_A,recode,measured vs self-reported
+BMXWT,WEIGHTLBTC_A,WEIGHTLBTC_A,recode,measured vs self-reported
+rx_count,RX12M_A,RX12M_A,recode,any Rx in 12 months only
