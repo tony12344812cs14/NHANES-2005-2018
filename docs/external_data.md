@@ -394,3 +394,4 @@ KNHANES 2014、2016 已依兩期的原始資料使用指南（제6기 2013–201
 6. 把 KNHANES 加進訓練（多來源訓練），和第 5 步的基準比較。前提是留一年 KNHANES 當測試，或等 2018、2020 下載後用來測試。
 7. KNHANES 全部加進訓練、在 NHANES 上做 LOCO（`modeling/step11_knhanes_augment.ipynb`，11/13）：**NHANES 的 AUROC 沒有提升**，0.834 / 0.833，和只用 NHANES 相同，逐 cycle 差異都在 ±0.003 內。
 8. 校準（`modeling/step12_calibration.ipynb`，11/13）：模型用 class weight 訓練，原始輸出只是排序分數（NHANES 高估 4 倍）。在 NHANES 的 LOCO 預測上做 Platt scaling 後，平均預測等於實際盛行率。把同一組參數原封不動套到 KNHANES，elastic net 兩年合併的平均預測是 0.065、實際 0.066（XGBoost 是 0.077，偏高 16%）。分年偏差在 NHANES 自己各 cycle 之間的差異範圍內，用另一年 KNHANES 調整截距反而更差。**結論：韓國不需要另外校準。**
+9. 學習曲線（`modeling/step13_learning_curve.ipynb`，11/13）：只用 NHANES，把訓練人數從 10% 加到 100%。最後 25%（多 7,180 人）只讓 AUROC 增加 0.001–0.002，曲線已經趨平。韓國的 10,518 人就算和 NHANES 的人一樣有用，預期也只有約 +0.002，所以 step 11 看不到提升是合理的。**用 KNHANES 增加訓練人數不是提升 NHANES AUROC 的方向；特徵（k114 對 317 個差 0.04）的影響大得多。**

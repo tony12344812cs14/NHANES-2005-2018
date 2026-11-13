@@ -103,7 +103,9 @@ Steps 9–12 are about external data (KNHANES, Korea; see `docs/external_data.md
 the features KNHANES also has, step 10 trains on NHANES and tests on KNHANES, step 11 adds KNHANES to
 the training data, and step 12 calibrates the scores (the models use class weights, so their raw output
 is a ranking score, not a probability) and checks the calibration on KNHANES. Steps 10–11 need the
-KNHANES files (see below); step 12 only reads the saved predictions of steps 9 and 10.
+KNHANES files (see below); step 12 only reads the saved predictions of steps 9 and 10. Step 13 is a
+learning curve on NHANES alone (training on 10–100% of the training people), to see whether more
+people of any kind could still raise the LOCO AUROC.
 
 ## Data analysis (`data_analysis/`)
 
