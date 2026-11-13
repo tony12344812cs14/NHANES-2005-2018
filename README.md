@@ -99,9 +99,11 @@ pipeline: catboost, torch, `tabm==0.0.3`, `rtdl_num_embeddings==0.0.12`; step 8b
 `modeling/step0_cycle_check.ipynb` is a check to run before modelling: it measures how well the
 features alone can tell the cycles apart, to find differences between cycles that are left.
 
-Steps 9–11 are about external data (KNHANES, Korea; see `docs/external_data.md`): step 9 keeps only
+Steps 9–12 are about external data (KNHANES, Korea; see `docs/external_data.md`): step 9 keeps only
 the features KNHANES also has, step 10 trains on NHANES and tests on KNHANES, step 11 adds KNHANES to
-the training data. Steps 10–11 need the KNHANES files (see below).
+the training data, and step 12 calibrates the scores (the models use class weights, so their raw output
+is a ranking score, not a probability) and checks the calibration on KNHANES. Steps 10–11 need the
+KNHANES files (see below); step 12 only reads the saved predictions of steps 9 and 10.
 
 ## Data analysis (`data_analysis/`)
 
