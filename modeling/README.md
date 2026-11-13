@@ -14,7 +14,7 @@
 | 2 | 模型：logistic regression（elastic net，基準）、XGBoost（主模型）；再比較 kNN、CatBoost、TabM（step 2）；人口學特徵的參考模型之後再加 | 5 個模型完成；人口學參考模型未做 |
 | 3 | 指標：**AUROC（主指標，10/29 使用者確認）**；輔助 AUPRC、Brier 與校準、固定閾值的敏感度 / 特異度；加權與不加權各報一次 | 已確認 |
 | 4 | 解釋：SHAP，並檢查有沒有可疑的洩漏特徵 | 未開始 |
-| 5 | 外部資料（韓國 KNHANES，討論見 `docs/external_data.md`）：只用 KNHANES 也有的特徵（step 9）、NHANES 訓練拿 KNHANES 測試（step 10）、KNHANES 加進訓練（step 11） | step 9、10 完成；step 11 執行中 |
+| 5 | 外部資料（韓國 KNHANES，討論見 `docs/external_data.md`）：只用 KNHANES 也有的特徵（step 9）、NHANES 訓練拿 KNHANES 測試（step 10）、KNHANES 加進訓練（step 11） | step 9、10、11 完成 |
 
 所有前處理（插補、標準化、特徵選擇）都只在訓練集上 fit。
 
@@ -406,7 +406,7 @@
 - **校準**：模型用 class weight 訓練，在 NHANES 內部預測機率本來就偏高（平均預測 0.37、實際 0.089）。在 KNHANES 偏高得更多（平均預測 0.32、實際 0.066），預測最高的 10% 實際盛行率是 32%，NHANES 是 40%。如果要用預測機率而不只是排序，在韓國需要重新校準。
 - 只用 CPU（`CUDA_VISIBLE_DEVICES=""`，4 個執行緒），11 分鐘。
 
-### 11/13 Step 11：KNHANES 全部加進訓練，看 NHANES 的預測有沒有變好（執行中）
+### 11/13 Step 11：KNHANES 全部加進訓練，看 NHANES 的預測有沒有變好
 
 `step11_knhanes_augment.ipynb`。設計和 step 9 的 k114 完全相同：LOCO、內層 LOCO 調參、elastic net / XGBoost、114 個特徵、PHQ-9 ≥ 10。
 
@@ -415,4 +415,15 @@
 - **程式**：`nhanes/loco.py` 的 `run_loco` / `tune` 新增參數 `extra_train`，不傳時和原本完全一樣。
 - **限制**：KNHANES 全部用來訓練，所以這個模型不能再拿 KNHANES 測試。外部測試仍以 step 10 為準。
 
-結果待補。
+結果（7 個測試 cycle 的平均 ± 標準差）：
+
+| 訓練資料 | elastic net | XGBoost |
+|---|---|---|
+| 只有 NHANES（step 9 k114） | 0.834 ± 0.013 | 0.833 ± 0.011 |
+| NHANES + KNHANES（step 11） | 0.834 ± 0.014 | 0.833 ± 0.011 |
+| 逐 cycle 差異的平均（最小、最大） | +0.0001（−0.0028、+0.0027） | −0.0005（−0.0016、+0.0008） |
+
+- **沒有提升**。7 個 cycle 的差異都在 ±0.003 以內；elastic net 有 3 個 cycle 變好，XGBoost 有 2 個。AUPRC 也幾乎不變（0.389 → 0.387、0.392 → 0.391）。
+- **Brier 變差**（0.160 → 0.168、0.153 → 0.160）。加入盛行率較低的韓國資料後，class weight 變大，預測機率被往上推得更多；這是機率尺度的變化，不是排序變差。
+- 和 step 10 一致：NHANES 已有 33,498 人，主要訊號在兩國相同，韓國資料沒有提供新的資訊；兩國不同的部分（體型、飲食）也沒有讓 NHANES 的預測變差。
+- 只用 CPU（`CUDA_VISIBLE_DEVICES=""`，4 個執行緒），65 分鐘。
