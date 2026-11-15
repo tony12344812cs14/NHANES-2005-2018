@@ -3,6 +3,9 @@ data_analysis.
 
 Target population (per cycle): RIDAGEYR >= 20, not pregnant at exam (RIDEXPRG != 1) and all nine
 PHQ-9 items DPQ010-DPQ090 answered 0-3.
+
+population(cycle, pregnant=True) gives the women left out by that rule instead: age >= 20, pregnant at
+exam (RIDEXPRG == 1), PHQ-9 complete (modeling/step14).
 """
 from nhanes import io as nio
 
@@ -12,10 +15,11 @@ SHORT = dict(zip(CYCLES, ["2005-06", "2007-08", "2009-10", "2011-12", "2013-14",
 FAMILY = {"PFC": "PFAS", "COTNAL": "COT"}  # renamed files, read as one module
 
 
-def population(cycle):
+def population(cycle, pregnant=False):
     demo = nio.read_component("DEMO", cycle, ["RIDAGEYR", "RIAGENDR", "RIDEXPRG"])
     dpq = nio.read_component("DPQ", cycle)
     items = dpq[nio.PHQ_ITEMS].apply(lambda s: nio.clean_codes(s, [7, 9]))
     ok = dpq.SEQN[items.notna().all(axis=1)]
-    keep = (demo.RIDAGEYR >= 20) & (demo.RIDEXPRG != 1) & demo.SEQN.isin(ok)
+    preg = demo.RIDEXPRG == 1
+    keep = (demo.RIDAGEYR >= 20) & (preg if pregnant else ~preg) & demo.SEQN.isin(ok)
     return demo[keep].reset_index(drop=True)

@@ -73,14 +73,14 @@ its own folder, with the same `NHANES_DATA` / `NHANES_WORK`).
 | `pipeline/step5_missing.ipynb` | missing rates in the population, per cycle |
 | `pipeline/step6_gates.ipynb` | finds the gate question of each skip-pattern follow-up from the data |
 | `pipeline/fetch_codebooks.ipynb` | downloads the CDC codebooks and extracts each variable's code table |
-| `pipeline/build_features.ipynb` | builds the table: skip patterns, checkboxes, derived and recoded features, diet days, missing threshold |
+| `pipeline/build_features.ipynb` | builds the table: skip patterns, checkboxes, derived and recoded features, diet days, missing threshold. With `NHANES_COHORT=pregnant` it builds the same columns for pregnant women into `features_pregnant/` (for `modeling/step14`); the main outputs are not touched |
 
 Code used by more than one notebook lives in `nhanes/`:
 
 | Module | Contents |
 |---|---|
 | `paths.py`, `io.py`, `download.py` | where data and outputs live, reading NHANES files, the download |
-| `cohort.py` | the analysis population and cycle names |
+| `cohort.py` | the analysis population and cycle names; `population(cycle, pregnant=True)` gives the pregnant women it leaves out |
 | `harmonize.py` | items recoded across cycles, prescription counts, PFOA / PFOS totals, lab calibrations |
 | `loco.py` | leave-one-cycle-out design matrix, elastic net, XGBoost, CatBoost, tuning, metrics; optional extra training rows from another survey (`extra_train`) |
 | `knhanes.py` | KNHANES 2014 / 2016 in the NHANES feature definitions (needs the KNHANES files in `KNHANES_DATA`) |
@@ -106,6 +106,9 @@ is a ranking score, not a probability) and checks the calibration on KNHANES. St
 KNHANES files (see below); step 12 only reads the saved predictions of steps 9 and 10. Step 13 is a
 learning curve on NHANES alone (training on 10–100% of the training people), to see whether more
 people of any kind could still raise the LOCO AUROC.
+
+Step 14 looks at one specific group, pregnant women (left out of the analysis population): the general
+model against a model trained on pregnant women only, both leave-one-cycle-out.
 
 ## Data analysis (`data_analysis/`)
 
