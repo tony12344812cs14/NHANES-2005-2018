@@ -108,7 +108,8 @@ learning curve on NHANES alone (training on 10–100% of the training people), t
 people of any kind could still raise the LOCO AUROC.
 
 Step 14 looks at one specific group, pregnant women (left out of the analysis population): the general
-model against a model trained on pregnant women only, both leave-one-cycle-out.
+model against a model trained on pregnant women only, both leave-one-cycle-out. Step 15 retrains the
+pregnant-only model on the top 3–50 features to see whether feature selection closes the gap.
 
 ## Data analysis (`data_analysis/`)
 
