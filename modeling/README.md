@@ -570,7 +570,7 @@ NHANES_RUN=1 NHANES_QUICK=1 jupyter execute modeling/step16_foundation_models.ip
 NHANES_RUN=1 jupyter execute --inplace modeling/step16_foundation_models.ipynb        # 全部
 ```
 
-每個任務完成就寫 `step16_out/<資料包>/<特徵組>/<版本>/<任務>.csv`，中斷後重跑會跳過已完成的。跑完把 `step16_out/` 傳回來即可。
+每個任務完成就寫 `step16_out/<資料包>/<特徵組>/<版本>/<任務>.csv`，中斷後重跑會跳過已完成的。`STEP16_MODELS=tabpfn_clf,tabpfn_reg` 可以只跑 TabPFN。跑完把 `step16_out/` 傳回來即可。
 
 傳統模型基準（logistic regression、random forest、XGBoost、CatBoost；固定設定、不調參；本機 CPU，4.5 分鐘）：
 
