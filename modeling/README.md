@@ -16,6 +16,7 @@
 | 4 | 解釋：SHAP，並檢查有沒有可疑的洩漏特徵 | 未開始 |
 | 5 | 外部資料（韓國 KNHANES，討論見 `docs/external_data.md`）：只用 KNHANES 也有的特徵（step 9）、NHANES 訓練拿 KNHANES 測試（step 10）、KNHANES 加進訓練（step 11）、校準（step 12） | step 9、10、11、12 完成；step 13（學習曲線）完成 |
 | 6 | 特定族群：懷孕者，一般模型對只用該族群訓練的模型（step 14）、只用前 k 個強特徵（step 15） | step 14、15 完成 |
+| 7 | 表格基礎模型（TabPFN / TabICL）用在其他三篇論文的族群與變數上（step 16） | 資料包與傳統模型基準完成；基礎模型待 3090 執行 |
 | 7 | 表格基礎模型用在其他論文的族群和變數上：Chen 2025（獨居者）、Jin 2025（PFAS）、ShangGuan 2026（少運動者）（step 16） | 資料包和傳統模型基準完成；TabPFN / TabICL 待在 3090 上執行 |
 
 所有前處理（插補、標準化、特徵選擇）都只在訓練集上 fit。
@@ -588,3 +589,45 @@ NHANES_RUN=1 jupyter execute --inplace modeling/step16_foundation_models.ipynb  
 - **ShangGuan 2026**：全部 32 個候選是 0.77–0.78，論文選出的 7 個只有 0.72，低於論文的 0.769；我們的族群比論文大（9,856 對 8,643），不是同一批人。
 - **ShangGuan 2026 的第三個驗證集不能採信**：它包含開發集裡 2017–2018 的受試者（換了編號），RF 在上面是 0.888，是記住了訓練資料。
 - 流程測試：TabICL 在本機 CPU 跑 Chen 2025 的一折（論文的 30 個變數）是 0.838（分類和迴歸相同），只是確認程式能跑，不算結果。
+
+### 11/16 Step 16：TabPFN / TabICL 用在其他三篇論文上（資料包完成，待 3090 執行）
+
+step 8 在 Dang et al. 2024 的變數上跑過 TabPFN / TabICL。這一步在另外三篇論文各自的族群和變數上做同樣的測試。Price et al. 2024（穿戴裝置）的每分鐘加速度計特徵還沒建，沒有納入。
+
+| 資料包 | 論文 | 族群（我們 / 論文） | 變數 | 論文的切法 | 論文報的最佳 AUC |
+|---|---|---|---|---|---|
+| `chen2025_living_alone` | Chen et al. 2025，獨居者 | 2,787 人、278 個陽性 / 2,642、279 | 74 個候選；論文選出的 30 個 | 80/20 | 疊合模型 0.85；RF 0.82 |
+| `jin2025_pfas` | Jin et al. 2025，血清 PFAS | 9,395 人、816 個陽性 / 9,074、786 | 11 個共變數 + 7 種 PFAS | 80/20 | CatBoost 0.75 |
+| `shangguan2026_inactive` | ShangGuan et al. 2026，身體活動不足者 | 開發集 9,856 人，加 3 個驗證集 | 32 個候選；論文選出的 7 個 | 70/30 + 驗證集 | LR 0.769 |
+
+- **流程**（同 step 8）：
+  1. 本機 `step16_export_bundles.ipynb` 寫出 `outputs/modeling/step16_bundles/`（每篇一個資料夾：`data.csv.gz`、`columns.json`、`baselines/`）。需要環境變數 `CHEN2025_COHORT`、`JIN2025_COHORT`、`SHANGGUAN2026_RUN` 指到復現時建好的資料表。
+  2. GPU 機器只需要資料包和 `step16_foundation_models.ipynb`：
+     ```bash
+     pip install -r modeling/requirements-foundation.txt
+     export TABPFN_TOKEN=...
+     export STEP16_BUNDLES=$PWD/step16_bundles STEP16_OUT=$PWD/step16_out
+     NHANES_RUN=1 NHANES_QUICK=1 jupyter execute modeling/step16_foundation_models.ipynb   # 先確認環境
+     NHANES_RUN=1 jupyter execute --inplace modeling/step16_foundation_models.ipynb        # 正式，220 個任務
+     ```
+     每個任務完成就寫檔，中斷後重跑會跳過已完成的。
+  3. 把 `step16_out/` 傳回本機，重新執行 notebook 的 Results 部分。
+- **任務**（基準和基礎模型完全相同）：10-fold（`cv0`–`cv9`），以及論文自己的切法（`paper`）。
+- **特徵組**：`all`（全部候選）和 `paper`（論文選出的，Chen 和 ShangGuan 才有）。
+- **四個版本**：TabPFN / TabICL 的 Classifier（0/1 標籤）和 Regressor（PHQ-9 總分，預測分數直接當排序分數算 AUROC）。
+- **傳統模型基準**：logistic regression、random forest、XGBoost、CatBoost，固定設定、不調參。這是「同一份資料上的傳統模型」，不是各篇論文的原始流程（沒有 SMOTE、missForest，也沒有 Chen 的疊合神經網路）。
+
+傳統模型基準的結果（10-fold 平均 AUROC；括號是論文切法的測試集）：
+
+| 族群，特徵組 | logistic regression | random forest | XGBoost | CatBoost |
+|---|---|---|---|---|
+| Chen 2025，全部 74 個 | 0.799（0.777） | 0.816（0.768） | 0.810（0.779） | 0.819（0.784） |
+| Chen 2025，論文的 30 個 | 0.809（0.765） | 0.806（0.732） | 0.800（0.744） | 0.814（0.758） |
+| Jin 2025，18 個 | 0.720（0.740） | 0.724（0.746） | 0.722（0.738） | 0.727（0.750） |
+| ShangGuan 2026，全部 32 個 | 0.765（0.766） | 0.778（0.773） | 0.779（0.763） | 0.777（0.771） |
+| ShangGuan 2026，論文的 7 個 | 0.717（0.718） | 0.713（0.705） | 0.725（0.721） | 0.722（0.722） |
+
+- Jin 2025 和 ShangGuan 2026 的基準和論文報的數字接近（0.75、0.769）。
+- Chen 2025 的 10-fold 是 0.80–0.82，接近論文的 base model（0.81–0.82）；但論文切法的測試集只有 0.73–0.78。測試集只有 56 個陽性，各折標準差 0.03–0.045，單次切分的數字很不穩。論文的疊合模型 0.85 沒有復現。
+- ShangGuan 2026 論文選出的 7 個變數比全部 32 個低約 0.05。
+- ShangGuan 2026 的第三個驗證集（2017 到 2020 年 3 月）包含開發集的 2017–2018 受試者，數字偏高（random forest 0.888），只供參考。
