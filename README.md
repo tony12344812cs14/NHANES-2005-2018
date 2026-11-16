@@ -73,7 +73,7 @@ its own folder, with the same `NHANES_DATA` / `NHANES_WORK`).
 | `pipeline/step5_missing.ipynb` | missing rates in the population, per cycle |
 | `pipeline/step6_gates.ipynb` | finds the gate question of each skip-pattern follow-up from the data |
 | `pipeline/fetch_codebooks.ipynb` | downloads the CDC codebooks and extracts each variable's code table |
-| `pipeline/build_features.ipynb` | builds the table: skip patterns, checkboxes, derived and recoded features, diet days, missing threshold. With `NHANES_COHORT=pregnant` it builds the same columns for pregnant women into `features_pregnant/` (for `modeling/step14`); the main outputs are not touched |
+| `pipeline/build_features.ipynb` | builds the table: skip patterns, checkboxes, derived and recoded features, diet days, missing threshold. With `NHANES_COHORT=pregnant` it builds the same columns for pregnant women into `features_pregnant/` (for `modeling/step14`), and with `NHANES_COHORT=post2021` for the 2021–2023 cycle into `features_post2021/` (for `modeling/step17`); the main outputs are not touched |
 
 Code used by more than one notebook lives in `nhanes/`:
 
@@ -116,6 +116,10 @@ other four papers: Chen et al. 2025 (adults living alone), Jin et al. 2025 (seru
 2026 (physically inactive adults) and, added 11/17, Price et al. 2024 (wearable movement data). `step16_export_bundles.ipynb` writes the bundles with conventional
 baselines; `step16_foundation_models.ipynb` runs on a GPU machine from the bundles alone. TabPFN is about 0.01
 AUROC above the best conventional baseline in each of them.
+
+Step 17 tests the model on NHANES August 2021 – August 2023, the first cycle after the pandemic pause
+(`_L` files, added to `nhanes/download.py`; `NHANES_COHORT=post2021` builds its feature table), with the
+208 features that cycle still has.
 
 ## Data analysis (`data_analysis/`)
 

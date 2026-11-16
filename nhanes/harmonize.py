@@ -55,7 +55,9 @@ def calibrate_labs(d):
     a, b = CREATININE_2005
     d.loc[old, "LBXSCR"] = a * d.loc[old, "LBXSCR"] + b
     notes["LBXSCR"] = "2005-06 corrected to standard creatinine (CDC Deming: 0.978 x - 0.016)"
-    new = d.cycle.eq("2017-18")
+    # 2021-23 (Cobas 8000, an upgrade of the 2017-18 Cobas 6000; CDC gives no equation for it) gets the same
+    # backward equations; only present when pipeline/build_features runs with NHANES_COHORT=post2021
+    new = d.cycle.isin(["2017-18", "2021-23"])
     for c, (a, b) in COBAS_TO_DXC.items():
         if c in d:
             d.loc[new, c] = a * d.loc[new, c] + b

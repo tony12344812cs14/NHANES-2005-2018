@@ -19,6 +19,7 @@ CYCLES = {  # cycle folder -> (first year in the URL, file suffix or "P_" prefix
     "2005-2006": (2005, "_D"), "2007-2008": (2007, "_E"), "2009-2010": (2009, "_F"),
     "2011-2012": (2011, "_G"), "2013-2014": (2013, "_H"), "2015-2016": (2015, "_I"),
     "2017-2018": (2017, "_J"), "2017-2020": (2017, "P_"),  # 2017-March 2020 pre-pandemic files
+    "2021-2023": (2021, "_L"),  # August 2021-August 2023, after the pandemic pause
 }
 _CORE = ["ALB_CR", "ALQ", "BIOPRO", "BMX", "BPQ", "CBC", "CDQ", "DBQ", "DEMO", "DIQ", "DPQ", "DR1TOT",
          "DR2TOT", "GHB", "GLU", "HDL", "HIQ", "HSQ", "HUQ", "KIQ_U", "MCQ", "OCQ", "PAQ", "RHQ", "RXQ_RX",
@@ -33,6 +34,8 @@ FILES = {
     "2015-2016": _CORE + _SURVEY + ["COT", "INQ", "OGTT", "PFAS"],
     "2017-2018": _CORE + _SURVEY + ["COT", "INQ", "PFAS"],
     "2017-2020": _CORE + ["BPXO", "COT", "INQ", "PFAS"],
+    # 2021-2023 has no BPX (BPXO instead), CDQ, DUQ, PFQ; the _CORE files it lacks are reported as missing
+    "2021-2023": [c for c in _CORE if c not in ("CDQ",)] + ["BPXO", "COT", "HOQ", "INQ"],
 }
 
 

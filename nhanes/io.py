@@ -14,6 +14,7 @@ CYCLE_SUFFIX = {
     "2015-2016": "_I",
     "2017-2018": "_J",
     "2017-2020": "P_",
+    "2021-2023": "_L",  # August 2021 - August 2023, after the pandemic pause (modeling/step17)
 }
 CYCLES_2005_2018 = list(CYCLE_SUFFIX)[:7]
 PHQ_ITEMS = [f"DPQ0{i}0" for i in range(1, 10)]
