@@ -111,9 +111,9 @@ Step 14 looks at one specific group, pregnant women (left out of the analysis po
 model against a model trained on pregnant women only, both leave-one-cycle-out. Step 15 retrains the
 pregnant-only model on the top 3–50 features to see whether feature selection closes the gap.
 
-Step 16 repeats step 8 (TabPFN / TabICL, classifier and regressor) on the cohorts and variables of three
-other papers: Chen et al. 2025 (adults living alone), Jin et al. 2025 (serum PFAS) and ShangGuan et al.
-2026 (physically inactive adults). `step16_export_bundles.ipynb` writes the bundles with conventional
+Step 16 repeats step 8 (TabPFN / TabICL, classifier and regressor) on the cohorts and variables of the
+other four papers: Chen et al. 2025 (adults living alone), Jin et al. 2025 (serum PFAS), ShangGuan et al.
+2026 (physically inactive adults) and, added 11/17, Price et al. 2024 (wearable movement data). `step16_export_bundles.ipynb` writes the bundles with conventional
 baselines; `step16_foundation_models.ipynb` runs on a GPU machine from the bundles alone. TabPFN is about 0.01
 AUROC above the best conventional baseline in each of them.
 
