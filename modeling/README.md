@@ -14,7 +14,7 @@
 | 2 | 模型：logistic regression（elastic net，基準）、XGBoost（主模型）；再比較 kNN、CatBoost、TabM（step 2）；人口學特徵的參考模型之後再加 | 5 個模型完成；人口學參考模型未做 |
 | 3 | 指標：**AUROC（主指標，10/29 使用者確認）**；輔助 AUPRC、Brier 與校準、固定閾值的敏感度 / 特異度；加權與不加權各報一次 | 已確認 |
 | 4 | 解釋：SHAP，並檢查有沒有可疑的洩漏特徵 | 未開始 |
-| 5 | 外部資料（韓國 KNHANES，討論見 `docs/external_data.md`）：只用 KNHANES 也有的特徵（step 9）、NHANES 訓練拿 KNHANES 測試（step 10）、KNHANES 加進訓練（step 11）、校準（step 12） | step 9、10、11、12 完成；step 13（學習曲線）完成 |
+| 5 | 外部資料（韓國 KNHANES，討論見 `docs/external_data.md`）：只用 KNHANES 也有的特徵（step 9）、NHANES 訓練拿 KNHANES 測試（step 10）、KNHANES 加進訓練（step 11）、校準（step 12）、韓國模型分數當特徵（step 18） | step 9、10、11、12 完成；step 13（學習曲線）完成；step 18 完成 |
 | 6 | 特定族群：懷孕者，一般模型對只用該族群訓練的模型（step 14）、只用前 k 個強特徵（step 15） | step 14、15 完成 |
 | 7 | 表格基礎模型用在其他論文的族群和變數上：Chen 2025（獨居者）、Jin 2025（PFAS）、ShangGuan 2026（少運動者）、Price 2024（穿戴裝置）（step 16） | 完成 |
 | 8 | COVID 後：2005–2018 訓練，測 NHANES 2021 年 8 月 – 2023 年 8 月（step 17） | 完成 |
@@ -710,3 +710,26 @@ Price et al. 2024（*Psychiatry Res* 332:115693）用 7 天每分鐘加速度計
 - **憂鬱上升無法用特徵解釋**：盛行率從 8.9% 升到 12.7%，模型只預測 9.2% / 8.9%。校準截距 +0.45 / +0.50，表示實際的憂鬱勝算約是依這些特徵預測的 1.6 倍。上升來自這些特徵沒有量到的因素（疫情本身是可能的原因之一），不是族群特徵改變造成的。
 - **限制**：只有一個疫情後的 cycle，回應率較低、人數較少；生化儀器換了；沒有疫情期間的資料。
 - 只用 CPU（6 個執行緒），約 40 分鐘。
+
+### 11/22 Step 18：KNHANES 訓練的風險分數當成 NHANES 的特徵（堆疊）
+
+`step18_knhanes_stacking.ipynb`。step 11 把韓國人當成訓練資料加進去，沒有變好；這一步改用另一種方式：**只用 KNHANES 訓練**一個模型，它對每個 NHANES 受試者預測的風險（logit）變成 NHANES 模型多出來的特徵。
+
+- **韓國模型**：KNHANES 2014 + 2016 全部 10,518 人、兩年都有的 114 個特徵、PHQ-9 ≥ 10；elastic net 和 XGBoost，用「留一年」調參（2014 ↔ 2016），網格同 step 1。留一年 AUROC 0.823 / 0.824。
+- **分數**：兩個韓國模型對每個 NHANES 受試者的預測 logit，成為 `kr_score_logreg`、`kr_score_xgb` 兩個特徵。韓國模型沒看過任何 NHANES 標籤，所以不會洩漏測試標籤。
+- **NHANES 模型**：照 step 1 的 LOCO（內層調參），兩種特徵組：317 個 + 2 個分數（對照 step 1）、k114 + 2 個分數（對照 step 9 k114 和 step 11）。
+
+韓國模型直接預測 NHANES（沒有用任何 NHANES 資料訓練）：各 cycle AUROC 0.781–0.832，全部合併 0.813 / 0.811（elastic net / XGBoost 分數）。
+
+NHANES LOCO 平均 AUROC（elastic net / XGBoost）：
+
+| 特徵 | 不加分數 | 加韓國分數（step 18） | 韓國人當訓練資料（step 11） |
+|---|---|---|---|
+| 317 個 | 0.874 / 0.871（step 1） | 0.873 / 0.871 | — |
+| k114 | 0.834 / 0.833（step 9） | 0.833 / 0.831 | 0.834 / 0.833 |
+
+- **沒有提升**：逐 cycle 差異 317 個為 −0.0007 / +0.0002（範圍 −0.006 到 +0.005），k114 為 −0.0010 / −0.0022，都在 cycle 間的雜訊內；k114 的 XGBoost 7 個 cycle 中 6 個略降。
+- **解釋**：韓國分數是 NHANES 已有特徵的一個固定組合，沒有帶進新資訊；NHANES 模型自己已經能從同樣的特徵學到更適合美國人的組合，而且學習曲線（step 13）顯示資料量不是瓶頸。
+- **結論**：KNHANES 不論當訓練資料（step 11）還是當特徵來源（step 18），都不能提升 NHANES 內部的預測；KNHANES 的用途是外部測試（step 10）。
+- 只用 CPU（6 個執行緒），約 6 小時。
+

@@ -102,10 +102,12 @@ features alone can tell the cycles apart, to find differences between cycles tha
 Steps 9–12 are about external data (KNHANES, Korea; see `docs/external_data.md`): step 9 keeps only
 the features KNHANES also has, step 10 trains on NHANES and tests on KNHANES, step 11 adds KNHANES to
 the training data, and step 12 calibrates the scores (the models use class weights, so their raw output
-is a ranking score, not a probability) and checks the calibration on KNHANES. Steps 10–11 need the
+is a ranking score, not a probability) and checks the calibration on KNHANES. Steps 10, 11 and 18 need the
 KNHANES files (see below); step 12 only reads the saved predictions of steps 9 and 10. Step 13 is a
 learning curve on NHANES alone (training on 10–100% of the training people), to see whether more
-people of any kind could still raise the LOCO AUROC.
+people of any kind could still raise the LOCO AUROC. Step 18 trains a model on KNHANES alone and adds its
+predicted risk for each NHANES person as an extra feature (stacking); like step 11, it does not raise
+the NHANES LOCO AUROC.
 
 Step 14 looks at one specific group, pregnant women (left out of the analysis population): the general
 model against a model trained on pregnant women only, both leave-one-cycle-out. Step 15 retrains the
